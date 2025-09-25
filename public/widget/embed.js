@@ -7,7 +7,7 @@
       // Try to get API URL from environment or fall back to localhost for dev
       const script = document.currentScript;
       const apiUrl = script && script.getAttribute('data-api-url');
-      return apiUrl || 'http://localhost:3000/api/query';
+      return apiUrl || 'http://localhost:3001/api/query';
     })(),
     widgetId: 'quickbase-ai-widget',
     buttonId: 'quickbase-ai-button',
