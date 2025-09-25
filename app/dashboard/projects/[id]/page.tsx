@@ -32,7 +32,7 @@ export default function ProjectPage() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const supabase = createClient()
 
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
       if (error || !user) {
@@ -44,7 +44,7 @@ export default function ProjectPage() {
       console.error('Error checking user:', error)
       router.push('/login')
     }
-  }
+  }, [router, supabase])
 
   const fetchProject = useCallback(async () => {
     try {
@@ -68,7 +68,7 @@ export default function ProjectPage() {
 
   useEffect(() => {
     checkUser()
-  }, [])
+  }, [checkUser])
 
   useEffect(() => {
     if (user && projectId) {

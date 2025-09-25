@@ -17,7 +17,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
     // Provide specific error messages based on OpenAI error types
     if (error && typeof error === 'object' && 'status' in error) {
-      const status = (error as any).status;
+      const status = (error as { status: number }).status;
       if (status === 429) {
         throw new Error('OpenAI quota exceeded. Please check your billing and usage limits at https://platform.openai.com/usage')
       } else if (status === 401) {
@@ -68,7 +68,7 @@ Context: ${context.join('\n\n')}`
 
     // Provide specific error messages based on OpenAI error types
     if (error && typeof error === 'object' && 'status' in error) {
-      const status = (error as any).status;
+      const status = (error as { status: number }).status;
       if (status === 429) {
         throw new Error('OpenAI quota exceeded. Please check your billing and usage limits at https://platform.openai.com/usage')
       } else if (status === 401) {

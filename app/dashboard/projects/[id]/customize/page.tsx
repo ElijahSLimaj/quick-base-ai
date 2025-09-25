@@ -28,7 +28,7 @@ export default function CustomizePage() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const supabase = createClient()
 
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
       if (error || !user) {
@@ -40,7 +40,7 @@ export default function CustomizePage() {
       console.error('Error checking user:', error)
       router.push('/login')
     }
-  }
+  }, [router, supabase])
   // Widget settings are managed by the WidgetCustomizer component
 
   const fetchProject = useCallback(async () => {
@@ -60,7 +60,7 @@ export default function CustomizePage() {
 
   useEffect(() => {
     checkUser()
-  }, [])
+  }, [checkUser])
 
   useEffect(() => {
     if (user) {
