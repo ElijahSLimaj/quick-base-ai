@@ -1,0 +1,157 @@
+import { createClient } from '@/lib/supabase/server'
+import { generateEmbedding, generateAnswer } from './embedder'
+
+export interface SearchResult {
+  text: string
+  source_url: string
+  similarity: number
+  metadata: Record<string, unknown>
+}
+
+export interface RAGResponse {
+  answer: string
+  confidence: number
+  sources: Array<{
+    text: string
+    url: string
+    similarity: number
+  }>
+  context: string[]
+}
+
+export async function performVectorSearch(
+  query: string,
+  projectId: string,
+  limit: number = 10
+): Promise<SearchResult[]> {
+  const supabase = await createClient()
+  
+  const queryEmbedding = await generateEmbedding(query)
+  
+  const { data: chunks, error } = await supabase.rpc('match_chunks', {
+    query_embedding: queryEmbedding,
+    match_count: limit,
+    project_id: projectId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any)
+
+  if (error) {
+    console.error('Vector search error:', error)
+    throw new Error('Failed to perform vector search')
+  }
+
+  return (chunks || []).map(chunk => ({
+    text: chunk.text,
+    source_url: chunk.source_url,
+    similarity: chunk.similarity,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata: (chunk.metadata as any) || {}
+  }))
+}
+
+export async function performHybridSearch(
+  query: string,
+  projectId: string,
+  limit: number = 10
+): Promise<SearchResult[]> {
+  const supabase = await createClient()
+  
+  const vectorResults = await performVectorSearch(query, projectId, Math.ceil(limit * 0.7))
+  
+  const { data: keywordResults, error } = await supabase
+    .from('chunks')
+    .select(`
+      text,
+      metadata,
+      content:content_id (
+        source_url
+      )
+    `)
+    .eq('content.project_id', projectId)
+    .textSearch('text', query.split(' ').join(' & '))
+    .limit(Math.ceil(limit * 0.3))
+
+  if (error) {
+    console.error('Keyword search error:', error)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const keywordSearchResults = (keywordResults || []).map((result: any) => ({
+    text: result.text,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    source_url: (result.content as any)?.source_url || '',
+    similarity: 0.5,
+    metadata: result.metadata
+  }))
+
+  const combinedResults = [...vectorResults, ...keywordSearchResults]
+  const uniqueResults = combinedResults.filter((result, index, self) => 
+    index === self.findIndex(r => r.text === result.text)
+  )
+
+  return uniqueResults
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit)
+}
+
+export async function generateRAGResponse(
+  question: string,
+  projectId: string,
+  useHybrid: boolean = true
+): Promise<RAGResponse> {
+  try {
+    const searchResults = useHybrid 
+      ? await performHybridSearch(question, projectId, 8)
+      : await performVectorSearch(question, projectId, 8)
+
+    if (searchResults.length === 0) {
+      return {
+        answer: "I don't have enough information to answer your question. Please make sure content has been uploaded and processed.",
+        confidence: 0,
+        sources: [],
+        context: []
+      }
+    }
+
+    const context = searchResults.map(result => result.text)
+    const { answer, confidence, sources } = await generateAnswer(question, context)
+
+    const formattedSources = searchResults.map((result, index) => ({
+      text: sources[index] || `Source ${index + 1}`,
+      url: result.source_url,
+      similarity: result.similarity
+    }))
+
+    return {
+      answer,
+      confidence,
+      sources: formattedSources,
+      context
+    }
+  } catch (error) {
+    console.error('RAG response error:', error)
+    throw new Error('Failed to generate RAG response')
+  }
+}
+
+export function calculateAnswerQuality(
+  answer: string,
+  context: string[],
+  sources: SearchResult[]
+): {
+  relevance: number
+  completeness: number
+  confidence: number
+} {
+  const relevance = sources.length > 0 
+    ? Math.min(0.9, sources.reduce((acc, s) => acc + s.similarity, 0) / sources.length)
+    : 0.3
+
+  const completeness = context.length > 0
+    ? Math.min(0.9, context.join('').length / 5000)
+    : 0.2
+
+  const confidence = (relevance * 0.6) + (completeness * 0.4)
+
+  return { relevance, completeness, confidence }
+}

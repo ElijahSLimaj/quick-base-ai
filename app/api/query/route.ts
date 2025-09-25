@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { generateRAGResponse } from '@/lib/ai/rag-engine'
+
+export async function POST(request: NextRequest) {
+  // Handle CORS preflight
+  const origin = request.headers.get('origin')
+
+  try {
+    const { question, projectId, useHybrid = true } = await request.json()
+    
+    if (!question || !projectId) {
+      return NextResponse.json({ error: 'Question and project ID are required' }, { status: 400 })
+    }
+
+    const supabase = await createClient()
+    
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single()
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const ragResponse = await generateRAGResponse(question, projectId, useHybrid)
+
+    const { error: queryError } = await supabase
+      .from('queries')
+      .insert({
+        project_id: projectId,
+        question,
+        answer: ragResponse.answer,
+        confidence: ragResponse.confidence
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+
+    if (queryError) {
+      console.error('Error saving query:', queryError)
+    }
+
+    const response = NextResponse.json({
+      answer: ragResponse.answer,
+      confidence: ragResponse.confidence,
+      sources: ragResponse.sources
+    })
+
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', origin || '*')
+    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type')
+
+    return response
+
+  } catch (error) {
+    console.error('Query error:', error)
+    const errorResponse = NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+
+    // Add CORS headers to error response
+    errorResponse.headers.set('Access-Control-Allow-Origin', origin || '*')
+    errorResponse.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    errorResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type')
+
+    return errorResponse
+  }
+}
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': origin || '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400', // 24 hours
+    },
+  })
+}
