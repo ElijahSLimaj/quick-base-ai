@@ -4,14 +4,13 @@
   const CONFIG = {
     projectId: null,
     apiUrl: (function() {
-      // Try to get API URL from environment or fall back to current domain
+      // Try to get API URL from environment or fall back to QuickBase AI domain
       const script = document.currentScript;
       const apiUrl = script && script.getAttribute('data-api-url');
       if (apiUrl) return apiUrl;
-      
-      // Auto-detect the API URL based on current domain
-      const currentOrigin = window.location.origin;
-      return `${currentOrigin}/api/query`;
+
+      // Use QuickBase AI production domain
+      return 'https://quick-base-ai.vercel.app/api/query';
     })(),
     widgetId: 'quickbase-ai-widget',
     buttonId: 'quickbase-ai-button',
