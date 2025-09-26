@@ -9,7 +9,10 @@ export async function POST(request: NextRequest) {
   try {
     const { question, projectId, useHybrid = true } = await request.json()
     
+    console.log('Query API: Received request', { question: question?.substring(0, 50) + '...', projectId, useHybrid })
+    
     if (!question || !projectId) {
+      console.error('Query API: Missing required fields', { question: !!question, projectId: !!projectId })
       return NextResponse.json({ error: 'Question and project ID are required' }, { status: 400 })
     }
 
@@ -22,10 +25,18 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (projectError || !project) {
+      console.error('Query API: Project not found', { projectId, error: projectError })
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
+    console.log('Query API: Project found', { projectId: project.id, name: project.name })
+
     const ragResponse = await generateRAGResponse(question, projectId, useHybrid)
+    console.log('Query API: RAG response generated', { 
+      answerLength: ragResponse.answer.length, 
+      confidence: ragResponse.confidence,
+      sourcesCount: ragResponse.sources.length 
+    })
 
     const { error: queryError } = await supabase
       .from('queries')
@@ -38,7 +49,7 @@ export async function POST(request: NextRequest) {
       } as any)
 
     if (queryError) {
-      console.error('Error saving query:', queryError)
+      console.error('Query API: Error saving query:', queryError)
     }
 
     const response = NextResponse.json({
@@ -52,10 +63,11 @@ export async function POST(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type')
 
+    console.log('Query API: Response sent successfully')
     return response
 
   } catch (error) {
-    console.error('Query error:', error)
+    console.error('Query API: Error occurred:', error)
     const errorResponse = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

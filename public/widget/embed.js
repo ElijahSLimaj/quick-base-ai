@@ -4,10 +4,14 @@
   const CONFIG = {
     projectId: null,
     apiUrl: (function() {
-      // Try to get API URL from environment or fall back to localhost for dev
+      // Try to get API URL from environment or fall back to current domain
       const script = document.currentScript;
       const apiUrl = script && script.getAttribute('data-api-url');
-      return apiUrl || 'http://localhost:3001/api/query';
+      if (apiUrl) return apiUrl;
+      
+      // Auto-detect the API URL based on current domain
+      const currentOrigin = window.location.origin;
+      return `${currentOrigin}/api/query`;
     })(),
     widgetId: 'quickbase-ai-widget',
     buttonId: 'quickbase-ai-button',
@@ -400,6 +404,9 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
+      console.log('QuickBase AI: Sending request to:', CONFIG.apiUrl);
+      console.log('QuickBase AI: Project ID:', CONFIG.projectId);
+
       const response = await fetch(CONFIG.apiUrl, {
         method: 'POST',
         headers: {
@@ -414,12 +421,16 @@
 
       clearTimeout(timeoutId);
 
+      console.log('QuickBase AI: Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('QuickBase AI: API Error Response:', errorData);
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('QuickBase AI: Response data:', data);
       loadingDiv.remove();
 
       if (data.answer) {
@@ -434,12 +445,19 @@
 
       if (error.name === 'AbortError') {
         errorMessage = 'Request timed out. Please check your connection and try again.';
+        console.error('QuickBase AI: Request was aborted - possible timeout or network issue');
       } else if (error.message.includes('Failed to fetch')) {
         errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        console.error('QuickBase AI: Network error - check API URL:', CONFIG.apiUrl);
       } else if (error.message.includes('404')) {
         errorMessage = 'Service not found. Please contact support.';
+        console.error('QuickBase AI: 404 error - API endpoint not found:', CONFIG.apiUrl);
       } else if (error.message.includes('401')) {
         errorMessage = 'Invalid project configuration. Please contact support.';
+        console.error('QuickBase AI: 401 error - authentication issue');
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+        console.error('QuickBase AI: 500 error - server-side issue');
       }
 
       addError(errorMessage);
