@@ -194,6 +194,7 @@
         margin: 0;
         font-size: 16px;
         font-weight: 600;
+        color: white !important;
       }
       
       .qb-ai-close {
@@ -220,6 +221,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
+        height: calc(500px - 60px);
       }
       
       .qb-ai-messages {
@@ -227,6 +229,8 @@
         padding: 16px;
         overflow-y: auto;
         background: #f8fafc;
+        max-height: 350px;
+        min-height: 200px;
       }
       
       .qb-ai-message {
@@ -234,6 +238,8 @@
         padding: 8px 12px;
         border-radius: 8px;
         max-width: 80%;
+        word-wrap: break-word;
+        line-height: 1.4;
       }
       
       .qb-ai-message.user {
@@ -472,7 +478,11 @@
     messageDiv.className = `qb-ai-message ${type}`;
     messageDiv.textContent = text;
     messages.appendChild(messageDiv);
-    messages.scrollTop = messages.scrollHeight;
+
+    // Smooth scroll to bottom
+    setTimeout(() => {
+      messages.scrollTop = messages.scrollHeight;
+    }, 10);
   }
 
   function addError(text) {
@@ -481,7 +491,11 @@
     errorDiv.className = 'qb-ai-error';
     errorDiv.textContent = text;
     messages.appendChild(errorDiv);
-    messages.scrollTop = messages.scrollHeight;
+
+    // Smooth scroll to bottom
+    setTimeout(() => {
+      messages.scrollTop = messages.scrollHeight;
+    }, 10);
   }
 
   if (document.readyState === 'loading') {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Palette, MessageCircle, Settings, Eye } from 'lucide-react'
+import { useNotification } from '@/contexts/NotificationContext'
 
 interface WidgetSettings {
   primaryColor: string
@@ -24,6 +25,7 @@ interface WidgetCustomizerProps {
 }
 
 export default function WidgetCustomizer({ projectId, onSettingsChange }: WidgetCustomizerProps) {
+  const { showSuccess } = useNotification()
   const [settings, setSettings] = useState<WidgetSettings>({
     primaryColor: '#2563eb',
     secondaryColor: '#ffffff',
@@ -53,7 +55,7 @@ export default function WidgetCustomizer({ projectId, onSettingsChange }: Widget
   const copyEmbedCode = async () => {
     try {
       await navigator.clipboard.writeText(generateEmbedCode())
-      alert('Embed code copied to clipboard!')
+      showSuccess('Embed code copied!', 'The code is now in your clipboard')
     } catch (error) {
       console.error('Failed to copy:', error)
     }

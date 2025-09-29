@@ -7,6 +7,7 @@ import { Plus, Globe, FileText, MessageCircle, Settings, Trash2 } from 'lucide-r
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useNotification } from '@/contexts/NotificationContext'
 
 interface Project {
   id: string
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { showSuccess, showError } = useNotification()
 
   const checkUser = useCallback(async () => {
     try {
@@ -89,17 +91,18 @@ export default function DashboardPage() {
         setProjects([data.project, ...projects])
         setNewProject({ name: '', domain: '' })
         setShowCreateForm(false)
+        showSuccess('Project created successfully!', `${data.project.name} is ready to use`)
       } else if (response.status === 401) {
         // If unauthorized, redirect to login
         router.push('/login')
         return
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showError('Failed to create project', error.error)
       }
     } catch (error) {
       console.error('Error creating project:', error)
-      alert('Failed to create project')
+      showError('Failed to create project', 'An unexpected error occurred')
     } finally {
       setCreating(false)
     }
@@ -123,16 +126,17 @@ export default function DashboardPage() {
       if (response.ok) {
         setProjects(projects.filter(p => p.id !== projectId))
         setShowDeleteConfirm(null)
+        showSuccess('Project deleted successfully')
       } else if (response.status === 401) {
         router.push('/login')
         return
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showError('Failed to delete project', error.error)
       }
     } catch (error) {
       console.error('Error deleting project:', error)
-      alert('Failed to delete project')
+      showError('Failed to delete project', 'An unexpected error occurred')
     } finally {
       setDeletingProject(null)
     }

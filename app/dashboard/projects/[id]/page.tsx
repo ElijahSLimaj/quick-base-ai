@@ -7,6 +7,7 @@ import { Upload, Globe, FileText, MessageCircle, Copy, Check, BarChart3, Palette
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useNotification } from '@/contexts/NotificationContext'
 
 interface Project {
   id: string
@@ -20,6 +21,7 @@ export default function ProjectPage() {
   const params = useParams()
   const router = useRouter()
   const projectId = params.id as string
+  const { showSuccess, showError } = useNotification()
   
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
@@ -95,15 +97,15 @@ export default function ProjectPage() {
 
       if (response.ok) {
         const data = await response.json()
-        alert(`Success! Processed ${data.chunksProcessed} chunks from ${websiteUrl}`)
+        showSuccess('Website crawled successfully!', `Processed ${data.chunksProcessed} chunks from ${websiteUrl}`)
         setWebsiteUrl('')
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showError('Failed to crawl website', error.error)
       }
     } catch (error) {
       console.error('Error crawling website:', error)
-      alert('Failed to crawl website')
+      showError('Failed to crawl website', 'An unexpected error occurred')
     } finally {
       setUploading(false)
     }
@@ -127,15 +129,15 @@ export default function ProjectPage() {
 
       if (response.ok) {
         const data = await response.json()
-        alert(`Success! Processed ${data.chunksProcessed} chunks from ${selectedFile.name}`)
+        showSuccess('Document uploaded successfully!', `Processed ${data.chunksProcessed} chunks from ${selectedFile.name}`)
         setSelectedFile(null)
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showError('Failed to upload document', error.error)
       }
     } catch (error) {
       console.error('Error uploading file:', error)
-      alert('Failed to upload file')
+      showError('Failed to upload document', 'An unexpected error occurred')
     } finally {
       setUploading(false)
     }
