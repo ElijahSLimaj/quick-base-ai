@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { generateRAGResponse } from '@/lib/ai/rag-engine'
 
 export async function POST(request: NextRequest) {
@@ -16,8 +16,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Question and project ID are required' }, { status: 400 })
     }
 
-    const supabase = await createClient()
-    
+    // Use service client to bypass RLS for widget operations
+    const supabase = createServiceClient()
+
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .select('*')
@@ -32,10 +33,10 @@ export async function POST(request: NextRequest) {
     console.log('Query API: Project found', { projectId: project.id, name: project.name })
 
     const ragResponse = await generateRAGResponse(question, projectId, useHybrid)
-    console.log('Query API: RAG response generated', { 
-      answerLength: ragResponse.answer.length, 
+    console.log('Query API: RAG response generated', {
+      answerLength: ragResponse.answer.length,
       confidence: ragResponse.confidence,
-      sourcesCount: ragResponse.sources.length 
+      sourcesCount: ragResponse.sources.length
     })
 
     const { error: queryError } = await supabase

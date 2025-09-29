@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { generateEmbedding, generateAnswer } from './embedder'
 
 export interface SearchResult {
@@ -24,7 +24,7 @@ export async function performVectorSearch(
   projectId: string,
   limit: number = 10
 ): Promise<SearchResult[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   
   const queryEmbedding = await generateEmbedding(query)
   
@@ -54,7 +54,7 @@ export async function performHybridSearch(
   projectId: string,
   limit: number = 10
 ): Promise<SearchResult[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   
   const vectorResults = await performVectorSearch(query, projectId, Math.ceil(limit * 0.7))
   
