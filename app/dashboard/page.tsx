@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Plus, Globe, FileText, MessageCircle, Settings, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -234,36 +235,32 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-96">
-              <CardHeader>
-                <CardTitle>Delete Project</CardTitle>
-                <CardDescription>
-                  Are you sure you want to delete this project? This action cannot be undone.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleDeleteProject(showDeleteConfirm)}
-                    disabled={deletingProject === showDeleteConfirm}
-                  >
-                    {deletingProject === showDeleteConfirm ? 'Deleting...' : 'Delete'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowDeleteConfirm(null)}
-                    disabled={deletingProject === showDeleteConfirm}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        <Dialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Project</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this project? This action cannot be undone and will permanently remove all associated data.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={deletingProject === showDeleteConfirm}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteProject(showDeleteConfirm!)}
+                disabled={deletingProject === showDeleteConfirm}
+              >
+                {deletingProject === showDeleteConfirm ? 'Deleting...' : 'Delete Project'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {projects.length === 0 ? (
           <Card>

@@ -49,7 +49,7 @@ function NotificationItem({ notification, onRemove }: NotificationProps) {
 
   return (
     <div className={cn(
-      'max-w-sm w-full shadow-lg rounded-lg pointer-events-auto border animate-in slide-in-from-top-5 duration-300',
+      'min-w-96 max-w-md w-full shadow-lg rounded-lg pointer-events-auto border animate-in slide-in-from-top-5 duration-300',
       styles[notification.type]
     )}>
       <div className="p-4">
@@ -84,7 +84,7 @@ interface NotificationContainerProps {
 
 export function NotificationContainer({ notifications, onRemove }: NotificationContainerProps) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-3 pointer-events-none">
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] space-y-3 pointer-events-none">
       {notifications.map((notification) => (
         <NotificationItem
           key={notification.id}
