@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Globe, FileText, MessageCircle, Settings } from 'lucide-react'
+import { Plus, Globe, FileText, MessageCircle, Settings, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -23,6 +23,8 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newProject, setNewProject] = useState({ name: '', domain: '' })
   const [creating, setCreating] = useState(false)
+  const [deletingProject, setDeletingProject] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -106,6 +108,34 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  const handleDeleteProject = async (projectId: string) => {
+    setDeletingProject(projectId)
+
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId })
+      })
+
+      if (response.ok) {
+        setProjects(projects.filter(p => p.id !== projectId))
+        setShowDeleteConfirm(null)
+      } else if (response.status === 401) {
+        router.push('/login')
+        return
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      alert('Failed to delete project')
+    } finally {
+      setDeletingProject(null)
+    }
   }
 
   if (loading) {
@@ -200,6 +230,37 @@ export default function DashboardPage() {
           </Card>
         )}
 
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-96">
+              <CardHeader>
+                <CardTitle>Delete Project</CardTitle>
+                <CardDescription>
+                  Are you sure you want to delete this project? This action cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleDeleteProject(showDeleteConfirm)}
+                    disabled={deletingProject === showDeleteConfirm}
+                  >
+                    {deletingProject === showDeleteConfirm ? 'Deleting...' : 'Delete'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(null)}
+                    disabled={deletingProject === showDeleteConfirm}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {projects.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
@@ -219,9 +280,23 @@ export default function DashboardPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
-                    <Button variant="ghost" size="sm">
-                      <Settings className="w-4 h-4" />
-                    </Button>
+                    <div className="flex space-x-1">
+                      <Button variant="ghost" size="sm">
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setShowDeleteConfirm(project.id)
+                        }}
+                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   <CardDescription>{project.domain}</CardDescription>
                 </CardHeader>
