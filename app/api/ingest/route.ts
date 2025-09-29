@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         .map(result => ({
           url: result.url,
           content: result.content,
-          title: result.title
+          title: result.title || result.metadata?.ogTitle || 'Untitled'
         }))
     } else if (type === 'document') {
       const file = formData.get('file') as File
