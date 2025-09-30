@@ -8,12 +8,12 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <nav className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </div>
+          </Link>
           <div className="flex items-center space-x-4">
             <Link href="/login">
               <Button variant="ghost">Sign In</Button>

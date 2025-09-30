@@ -158,12 +158,12 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </div>
+          </Link>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={handleSignOut}>
               Sign Out
@@ -245,14 +245,14 @@ export default function DashboardPage() {
             </DialogHeader>
             <DialogFooter className="gap-2">
               <Button
-                variant="outline"
+                className="bg-white text-black border border-gray-800 hover:bg-gray-50"
                 onClick={() => setShowDeleteConfirm(null)}
                 disabled={deletingProject === showDeleteConfirm}
               >
                 Cancel
               </Button>
               <Button
-                variant="destructive"
+                className="bg-white text-red-600 hover:bg-gray-50"
                 onClick={() => handleDeleteProject(showDeleteConfirm!)}
                 disabled={deletingProject === showDeleteConfirm}
               >

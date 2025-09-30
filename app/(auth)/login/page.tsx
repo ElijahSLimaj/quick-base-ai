@@ -42,12 +42,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
+          <Link href="/dashboard" className="flex items-center justify-center space-x-2 mb-4 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
             <span className="text-xl font-bold">QuickBase AI</span>
-          </div>
+          </Link>
           <CardTitle>Welcome back</CardTitle>
           <CardDescription>
             Sign in to your account to continue
