@@ -24,8 +24,7 @@ export async function crawlWebsite(
 ): Promise<CrawlResult[]> {
   const apiKey = process.env.FIRECRAWL_API_KEY
   if (!apiKey) {
-    console.warn('FIRECRAWL_API_KEY not found, falling back to basic crawler')
-    return fallbackCrawlWebsite(baseUrl, maxDepth, maxPages)
+    throw new Error('FIRECRAWL_API_KEY is required but not found. Please configure your Firecrawl API key.')
   }
 
   const app = new FirecrawlApp({ apiKey })
@@ -40,27 +39,40 @@ export async function crawlWebsite(
     })
 
     if (!crawlResponse || !crawlResponse.data) {
-      throw new Error('Firecrawl crawl failed')
+      throw new Error('Firecrawl crawl failed - no data returned')
     }
 
-    return crawlResponse.data.map((page: any) => ({
-      url: page.metadata?.sourceURL || page.url,
-      title: page.metadata?.title || page.metadata?.ogTitle || '',
-      content: page.markdown || page.content || '',
-      links: extractLinksFromContent(page.markdown || page.content || ''),
-      metadata: {
-        ogTitle: page.metadata?.ogTitle,
-        ogDescription: page.metadata?.ogDescription,
-        description: page.metadata?.description,
-        keywords: page.metadata?.keywords,
-        sourceURL: page.metadata?.sourceURL,
-        language: page.metadata?.language,
-        statusCode: page.metadata?.statusCode
+    // Normalize URLs to avoid duplicates from fragments
+    const normalizedResults = crawlResponse.data.map((page: any) => {
+      const originalUrl = page.metadata?.sourceURL || page.url
+      const normalizedUrl = normalizeUrl(originalUrl)
+      
+      return {
+        url: normalizedUrl,
+        title: page.metadata?.title || page.metadata?.ogTitle || '',
+        content: page.markdown || page.content || '',
+        links: extractLinksFromContent(page.markdown || page.content || ''),
+        metadata: {
+          ogTitle: page.metadata?.ogTitle,
+          ogDescription: page.metadata?.ogDescription,
+          description: page.metadata?.description,
+          keywords: page.metadata?.keywords,
+          sourceURL: page.metadata?.sourceURL,
+          language: page.metadata?.language,
+          statusCode: page.metadata?.statusCode
+        }
       }
-    }))
+    })
+
+    // Remove duplicates based on normalized URLs
+    const uniqueResults = normalizedResults.filter((result, index, self) => 
+      index === self.findIndex(r => r.url === result.url)
+    )
+
+    return uniqueResults
   } catch (error) {
-    console.error('Firecrawl error, falling back to basic crawler:', error)
-    return fallbackCrawlWebsite(baseUrl, maxDepth, maxPages)
+    console.error('Firecrawl error:', error)
+    throw new Error(`Website crawling failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -76,127 +88,20 @@ function extractLinksFromContent(content: string): string[] {
   return [...new Set(links)]
 }
 
-async function fallbackCrawlWebsite(
-  baseUrl: string,
-  maxDepth: number = 2,
-  maxPages: number = 50
-): Promise<CrawlResult[]> {
-  const visited = new Set<string>()
-  const results: CrawlResult[] = []
-  const queue: { url: string; depth: number }[] = [{ url: baseUrl, depth: 0 }]
 
-  while (queue.length > 0 && results.length < maxPages) {
-    const { url, depth } = queue.shift()!
-
-    if (visited.has(url) || depth > maxDepth) continue
-    visited.add(url)
-
-    try {
-      const result = await fallbackCrawlPage(url, baseUrl)
-      results.push(result)
-
-      if (depth < maxDepth) {
-        result.links.forEach(link => {
-          if (!visited.has(link) && isInternalLink(link, baseUrl)) {
-            queue.push({ url: link, depth: depth + 1 })
-          }
-        })
-      }
-    } catch (error) {
-      console.error(`Error crawling ${url}:`, error)
-      results.push({
-        url,
-        title: '',
-        content: '',
-        links: [],
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
-    }
-  }
-
-  return results
-}
-
-async function fallbackCrawlPage(url: string, baseUrl: string): Promise<CrawlResult> {
-  const cheerio = await import('cheerio')
-
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'QuickBase AI Crawler 1.0'
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-  }
-
-  const html = await response.text()
-  const $ = cheerio.load(html)
-
-  const title = $('title').text().trim() || $('h1').first().text().trim()
-
-  $('script, style, nav, header, footer, aside').remove()
-
-  const content = extractTextContent($)
-  const links = extractLinks($, baseUrl)
-
-  return {
-    url,
-    title,
-    content,
-    links
-  }
-}
-
-function extractTextContent($: any): string {
-  const selectors = [
-    'main',
-    'article',
-    '.content',
-    '.post-content',
-    '.entry-content',
-    '.page-content',
-    'body'
-  ]
-  
-  for (const selector of selectors) {
-    const element = $(selector).first()
-    if (element.length > 0) {
-      return cleanText(element.text())
-    }
-  }
-  
-  return cleanText($('body').text())
-}
-
-function extractLinks($: any, baseUrl: string): string[] {
-  const links: string[] = []
-  const baseUrlObj = new URL(baseUrl)
-  
-  $('a[href]').each((_: any, element: any) => {
-    const href = $(element).attr('href')
-    if (!href) return
-    
-    try {
-      const url = new URL(href, baseUrl)
-      if (url.origin === baseUrlObj.origin) {
-        links.push(url.href)
-      }
-    } catch {
-      // Invalid URL, skip
-    }
-  })
-  
-  return [...new Set(links)]
-}
-
-function isInternalLink(url: string, baseUrl: string): boolean {
+function normalizeUrl(url: string): string {
   try {
     const urlObj = new URL(url)
-    const baseUrlObj = new URL(baseUrl)
-    return urlObj.origin === baseUrlObj.origin
+    // Remove fragment (hash) and normalize
+    urlObj.hash = ''
+    // Remove trailing slash for consistency
+    let normalized = urlObj.toString()
+    if (normalized.endsWith('/') && normalized !== urlObj.origin + '/') {
+      normalized = normalized.slice(0, -1)
+    }
+    return normalized
   } catch {
-    return false
+    return url
   }
 }
 

@@ -55,7 +55,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
-          project_id: string | null
+          website_id: string | null
           source_url: string
         }
         Insert: {
@@ -63,7 +63,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
-          project_id?: string | null
+          website_id?: string | null
           source_url: string
         }
         Update: {
@@ -71,20 +71,20 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
-          project_id?: string | null
+          website_id?: string | null
           source_url?: string
         }
         Relationships: [
           {
-            foreignKeyName: "content_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "content_website_id_fkey"
+            columns: ["website_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "websites"
             referencedColumns: ["id"]
           },
         ]
       }
-      projects: {
+      websites: {
         Row: {
           created_at: string | null
           domain: string
@@ -126,7 +126,7 @@ export type Database = {
           confidence: number
           created_at: string | null
           id: string
-          project_id: string | null
+          website_id: string | null
           question: string
         }
         Insert: {
@@ -134,7 +134,7 @@ export type Database = {
           confidence: number
           created_at?: string | null
           id?: string
-          project_id?: string | null
+          website_id?: string | null
           question: string
         }
         Update: {
@@ -142,15 +142,15 @@ export type Database = {
           confidence?: number
           created_at?: string | null
           id?: string
-          project_id?: string | null
+          website_id?: string | null
           question?: string
         }
         Relationships: [
           {
-            foreignKeyName: "queries_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "queries_website_id_fkey"
+            columns: ["website_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "websites"
             referencedColumns: ["id"]
           },
         ]
@@ -192,7 +192,7 @@ export type Database = {
           created_at: string | null
           id: string
           plan: string
-          project_id: string | null
+          website_id: string | null
           status: string
           updated_at: string | null
           usage_count: number | null
@@ -201,7 +201,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           plan: string
-          project_id?: string | null
+          website_id?: string | null
           status: string
           updated_at?: string | null
           usage_count?: number | null
@@ -210,17 +210,17 @@ export type Database = {
           created_at?: string | null
           id?: string
           plan?: string
-          project_id?: string | null
+          website_id?: string | null
           status?: string
           updated_at?: string | null
           usage_count?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "subscriptions_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "subscriptions_website_id_fkey"
+            columns: ["website_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "websites"
             referencedColumns: ["id"]
           },
         ]

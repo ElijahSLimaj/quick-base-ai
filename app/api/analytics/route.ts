@@ -11,22 +11,22 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
+    const websiteId = searchParams.get('projectId') // Keep same param name for compatibility
     const timeRange = searchParams.get('timeRange') || '7d'
 
-    if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    if (!websiteId) {
+      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 })
     }
 
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
+    const { data: website, error: websiteError } = await supabase
+      .from('websites')
       .select('*')
-      .eq('id', projectId)
+      .eq('id', websiteId)
       .eq('owner_id', user.id)
       .single()
 
-    if (projectError || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    if (websiteError || !website) {
+      return NextResponse.json({ error: 'Website not found' }, { status: 404 })
     }
 
     const timeFilter = getTimeFilter(timeRange)
@@ -40,19 +40,19 @@ export async function GET(request: NextRequest) {
       supabase
         .from('queries')
         .select('*')
-        .eq('project_id', projectId)
+        .eq('website_id', websiteId)
         .gte('created_at', timeFilter)
         .order('created_at', { ascending: false }),
       
       supabase
         .from('content')
         .select('id, created_at')
-        .eq('project_id', projectId),
+        .eq('website_id', websiteId),
       
       supabase
         .from('queries')
         .select('question, confidence')
-        .eq('project_id', projectId)
+        .eq('website_id', websiteId)
         .gte('created_at', timeFilter)
         .order('confidence', { ascending: false })
         .limit(10),
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('queries')
         .select('confidence')
-        .eq('project_id', projectId)
+        .eq('website_id', websiteId)
         .gte('created_at', timeFilter)
     ])
 

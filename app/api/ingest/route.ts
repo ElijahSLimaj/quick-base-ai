@@ -15,22 +15,22 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
-    const projectId = formData.get('projectId') as string
+    const websiteId = formData.get('websiteId') as string
     const type = formData.get('type') as string
     
-    if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    if (!websiteId) {
+      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 })
     }
 
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
+    const { data: website, error: websiteError } = await supabase
+      .from('websites')
       .select('*')
-      .eq('id', projectId)
+      .eq('id', websiteId)
       .eq('owner_id', user.id)
       .single()
 
-    if (projectError || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    if (websiteError || !website) {
+      return NextResponse.json({ error: 'Website not found' }, { status: 404 })
     }
 
     let contentEntries: Array<{ url: string; content: string; title: string }> = []
@@ -42,13 +42,25 @@ export async function POST(request: NextRequest) {
       }
 
       const crawlResults = await crawlWebsite(url, 2, 20)
-      contentEntries = crawlResults
+      
+      // Combine ALL crawled content into ONE entry with the main URL
+      const allContent = crawlResults
         .filter(result => !result.error && result.content.trim().length > 0)
-        .map(result => ({
-          url: result.url,
-          content: result.content,
-          title: result.title || result.metadata?.ogTitle || 'Untitled'
-        }))
+        .map(result => result.content)
+        .join('\n\n--- PAGE BREAK ---\n\n')
+      
+      // Get the main domain URL (normalized)
+      const mainUrl = new URL(url)
+      mainUrl.hash = ''
+      mainUrl.pathname = '/'
+      const mainDomainUrl = mainUrl.toString().replace(/\/$/, '')
+      
+      // Create ONE entry with all content combined
+      contentEntries = [{
+        url: mainDomainUrl,
+        content: allContent,
+        title: 'Website Content'
+      }]
     } else if (type === 'document') {
       const file = formData.get('file') as File
       if (!file) {
@@ -71,6 +83,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No content found to process' }, { status: 400 })
     }
 
+    // Clear existing content for this website before adding new content
+    console.log(`Clearing existing content for website ${websiteId}`)
+    
+    // Get all content IDs for this website first
+    const { data: existingContent } = await supabase
+      .from('content')
+      .select('id')
+      .eq('website_id', websiteId)
+    
+    if (existingContent && existingContent.length > 0) {
+      const contentIds = existingContent.map(c => c.id)
+      
+      // Delete chunks first (foreign key constraint)
+      await supabase.from('chunks').delete().in('content_id', contentIds)
+      
+      // Then delete content
+      await supabase.from('content').delete().eq('website_id', websiteId)
+    }
+
     const processedChunks = []
     
     for (const entry of contentEntries) {
@@ -79,10 +110,23 @@ export async function POST(request: NextRequest) {
       for (const chunk of chunks) {
         const embedding = await generateEmbedding(chunk.text)
         
+        // Check if this URL already exists for this website
+        const { data: existingRecord } = await supabase
+          .from('content')
+          .select('id')
+          .eq('website_id', websiteId)
+          .eq('source_url', entry.url)
+          .single()
+        
+        if (existingRecord) {
+          console.log(`URL ${entry.url} already exists, skipping`)
+          continue
+        }
+
         const { data: contentRecord, error: contentError } = await supabase
           .from('content')
           .insert({
-            project_id: projectId,
+            website_id: websiteId,
             source_url: entry.url,
             content: entry.content
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,7 +166,7 @@ export async function POST(request: NextRequest) {
     await (supabase as any)
       .from('content')
       .update({ chunked_at: new Date().toISOString() })
-      .eq('project_id', projectId)
+      .eq('website_id', websiteId)
 
     return NextResponse.json({
       success: true,
