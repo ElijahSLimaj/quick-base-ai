@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withPlanGuard } from '@/lib/middleware/plan-guard'
 
 export async function GET() {
   try {
@@ -36,48 +37,51 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export const POST = withPlanGuard(
+  async (request: NextRequest) => {
+    try {
+      const supabase = await createClient()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      const { name, domain } = await request.json()
+
+      if (!name || !domain) {
+        return NextResponse.json({ error: 'Name and domain are required' }, { status: 400 })
+      }
+
+      const { data: website, error } = await supabase
+        .from('websites')
+        .insert({
+          name,
+          domain,
+          owner_id: user.id,
+          settings: {}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating website:', error)
+        return NextResponse.json({ error: 'Failed to create website' }, { status: 500 })
+      }
+
+      return NextResponse.json({ website })
+
+    } catch (error) {
+      console.error('Websites POST error:', error)
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
     }
-
-    const { name, domain } = await request.json()
-    
-    if (!name || !domain) {
-      return NextResponse.json({ error: 'Name and domain are required' }, { status: 400 })
-    }
-
-    const { data: website, error } = await supabase
-      .from('websites')
-      .insert({
-        name,
-        domain,
-        owner_id: user.id,
-        settings: {}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating website:', error)
-      return NextResponse.json({ error: 'Failed to create website' }, { status: 500 })
-    }
-
-    return NextResponse.json({ website })
-
-  } catch (error) {
-    console.error('Websites POST error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+  },
+  { action: 'create_website' }
+)
 
 export async function DELETE(request: NextRequest) {
   try {

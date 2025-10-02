@@ -29,7 +29,7 @@ export async function performVectorSearch(
   const queryEmbedding = await generateEmbedding(query)
   
   const { data: chunks, error } = await supabase.rpc('match_chunks', {
-    query_embedding: queryEmbedding,
+    query_embedding: JSON.stringify(queryEmbedding),
     match_count: limit,
     project_id: projectId
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

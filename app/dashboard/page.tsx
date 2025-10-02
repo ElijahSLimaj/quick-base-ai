@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useNotification } from '@/contexts/NotificationContext'
+import { PlanLimitGuard } from '@/components/billing/PlanLimitGuard'
+import { UsageDisplay } from '@/components/billing/UsageDisplay'
 
 interface Website {
   id: string
@@ -173,16 +175,20 @@ export default function DashboardPage() {
       </nav>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Your Websites</h1>
-            <p className="text-gray-600 mt-2">Manage your AI support widgets</p>
-          </div>
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Website
-          </Button>
-        </div>
+        <div className="grid lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Your Websites</h1>
+                <p className="text-gray-600 mt-2">Manage your AI support widgets</p>
+              </div>
+              <PlanLimitGuard action="create_website">
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Website
+                </Button>
+              </PlanLimitGuard>
+            </div>
 
         {showCreateForm && (
           <Card className="mb-8">
@@ -268,10 +274,12 @@ export default function DashboardPage() {
               <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No websites yet</h3>
               <p className="text-gray-600 mb-4">Create your first website to get started</p>
-              <Button onClick={() => setShowCreateForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Website
-              </Button>
+              <PlanLimitGuard action="create_website">
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Website
+                </Button>
+              </PlanLimitGuard>
             </CardContent>
           </Card>
         ) : (
@@ -327,6 +335,13 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+          </div>
+
+          {/* Sidebar with Usage Display */}
+          <div className="lg:col-span-1">
+            <UsageDisplay className="sticky top-8" />
+          </div>
+        </div>
       </main>
     </div>
   )

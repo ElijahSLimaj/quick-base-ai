@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             content_id: (contentRecord as any).id,
             text: chunk.text,
-            embedding,
+            embedding: JSON.stringify(embedding),
             metadata: chunk.metadata
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any)
