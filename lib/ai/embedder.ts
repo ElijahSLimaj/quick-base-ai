@@ -6,18 +6,28 @@ const openai = new OpenAI({
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    console.log('=== EMBEDDING START ===')
+    console.log('Text length:', text.length)
+    console.log('OpenAI API Key present:', !!process.env.OPENAI_API_KEY)
+    console.log('OpenAI API Key prefix:', process.env.OPENAI_API_KEY?.substring(0, 7))
+
     const response = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
     })
 
+    console.log('Embedding generated successfully, length:', response.data[0].embedding.length)
     return response.data[0].embedding
   } catch (error) {
+    console.error('=== EMBEDDING ERROR ===')
     console.error('Error generating embedding:', error)
+    console.error('Error type:', typeof error)
+    console.error('Error properties:', error && typeof error === 'object' ? Object.keys(error) : 'N/A')
 
     // Provide specific error messages based on OpenAI error types
     if (error && typeof error === 'object' && 'status' in error) {
       const status = (error as { status: number }).status;
+      console.error('OpenAI HTTP Status:', status)
       if (status === 429) {
         throw new Error('OpenAI quota exceeded. Please check your billing and usage limits at https://platform.openai.com/usage')
       } else if (status === 401) {
@@ -27,7 +37,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       }
     }
 
-    throw new Error('Failed to generate embedding. Please check your OpenAI configuration.')
+    throw new Error(`Failed to generate embedding: ${error?.message}. Please check your OpenAI configuration.`)
   }
 }
 
@@ -36,6 +46,11 @@ export async function generateAnswer(
   context: string[]
 ): Promise<{ answer: string; confidence: number; sources: string[] }> {
   try {
+    console.log('=== ANSWER GENERATION START ===')
+    console.log('Question:', question.substring(0, 100))
+    console.log('Context chunks:', context.length)
+    console.log('Total context length:', context.join('').length)
+
     const systemPrompt = `You are a helpful AI assistant that answers questions based on the provided context.
 
 Rules:
@@ -47,6 +62,7 @@ Rules:
 
 Context: ${context.join('\n\n')}`
 
+    console.log('Calling OpenAI chat completion...')
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -58,17 +74,24 @@ Context: ${context.join('\n\n')}`
     })
 
     const answer = response.choices[0].message.content || 'I cannot answer this question.'
+    console.log('Answer received:', answer.substring(0, 100) + '...')
 
     const confidence = calculateConfidence(answer, context)
     const sources = extractSources(context)
 
+    console.log('=== ANSWER GENERATION SUCCESS ===')
+    console.log('Final confidence:', confidence)
     return { answer, confidence, sources }
   } catch (error) {
+    console.error('=== ANSWER GENERATION ERROR ===')
     console.error('Error generating answer:', error)
+    console.error('Error type:', typeof error)
+    console.error('Error properties:', error && typeof error === 'object' ? Object.keys(error) : 'N/A')
 
     // Provide specific error messages based on OpenAI error types
     if (error && typeof error === 'object' && 'status' in error) {
       const status = (error as { status: number }).status;
+      console.error('OpenAI HTTP Status:', status)
       if (status === 429) {
         throw new Error('OpenAI quota exceeded. Please check your billing and usage limits at https://platform.openai.com/usage')
       } else if (status === 401) {
@@ -78,7 +101,7 @@ Context: ${context.join('\n\n')}`
       }
     }
 
-    throw new Error('Failed to generate answer. Please check your OpenAI configuration.')
+    throw new Error(`Failed to generate answer: ${error?.message}. Please check your OpenAI configuration.`)
   }
 }
 

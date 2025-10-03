@@ -100,11 +100,25 @@ export async function generateRAGResponse(
   useHybrid: boolean = true
 ): Promise<RAGResponse> {
   try {
-    const searchResults = useHybrid 
+    console.log('=== RAG ENGINE START ===')
+    console.log('Input:', { question: question.substring(0, 100), projectId, useHybrid })
+
+    console.log('Performing search...')
+    const searchResults = useHybrid
       ? await performHybridSearch(question, projectId, 8)
       : await performVectorSearch(question, projectId, 8)
 
+    console.log('Search results:', {
+      count: searchResults.length,
+      results: searchResults.map(r => ({
+        similarity: r.similarity,
+        textLength: r.text.length,
+        url: r.source_url
+      }))
+    })
+
     if (searchResults.length === 0) {
+      console.log('No search results found - returning default response')
       return {
         answer: "I don't have enough information to answer your question. Please make sure content has been uploaded and processed.",
         confidence: 0,
@@ -114,7 +128,10 @@ export async function generateRAGResponse(
     }
 
     const context = searchResults.map(result => result.text)
+    console.log('Generating answer with context length:', context.join('').length)
+
     const { answer, confidence, sources } = await generateAnswer(question, context)
+    console.log('Answer generated:', { answerLength: answer.length, confidence })
 
     const formattedSources = searchResults.map((result, index) => ({
       text: sources[index] || `Source ${index + 1}`,
@@ -122,6 +139,7 @@ export async function generateRAGResponse(
       similarity: result.similarity
     }))
 
+    console.log('=== RAG ENGINE SUCCESS ===')
     return {
       answer,
       confidence,
@@ -129,8 +147,12 @@ export async function generateRAGResponse(
       context
     }
   } catch (error) {
+    console.error('=== RAG ENGINE ERROR ===')
     console.error('RAG response error:', error)
-    throw new Error('Failed to generate RAG response')
+    console.error('Error type:', typeof error)
+    console.error('Error message:', error?.message)
+    console.error('Error stack:', error?.stack)
+    throw new Error(`Failed to generate RAG response: ${error?.message}`)
   }
 }
 

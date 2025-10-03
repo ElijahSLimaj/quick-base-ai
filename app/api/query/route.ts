@@ -7,10 +7,21 @@ export async function POST(request: NextRequest) {
   // Handle CORS preflight
   const origin = request.headers.get('origin')
 
+  console.log('=== QUERY API START ===')
+  console.log('Request origin:', origin)
+  console.log('Request headers:', Object.fromEntries(request.headers.entries()))
+
   try {
-    const { question, websiteId, useHybrid = true } = await request.json()
-    
-    console.log('Query API: Received request', { question: question?.substring(0, 50) + '...', websiteId, useHybrid })
+    console.log('Parsing request body...')
+    const body = await request.json()
+    const { question, websiteId, useHybrid = true } = body
+
+    console.log('Query API: Received request', {
+      question: question?.substring(0, 100) + '...',
+      websiteId,
+      useHybrid,
+      fullBody: body
+    })
     
     if (!question || !websiteId) {
       console.error('Query API: Missing required fields', { question: !!question, websiteId: !!websiteId })
@@ -18,13 +29,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Use service client to bypass RLS for widget operations
+    console.log('Creating Supabase service client...')
     const supabase = createServiceClient()
+    console.log('Service client created successfully')
 
+    console.log('Querying website from database...', { websiteId })
     const { data: website, error: websiteError } = await supabase
       .from('websites')
       .select('*')
       .eq('id', websiteId)
       .single()
+
+    console.log('Database query result:', {
+      website: website ? `Found: ${website.name}` : 'Not found',
+      error: websiteError ? websiteError.message : 'No error'
+    })
 
     if (websiteError || !website) {
       console.error('Query API: Website not found', { websiteId, error: websiteError })
@@ -34,14 +53,17 @@ export async function POST(request: NextRequest) {
     console.log('Query API: Website found', { websiteId: website.id, name: website.name })
 
     // Check website limits before processing query
+    console.log('Checking project limits...')
     const limitCheck = await checkProjectLimits(websiteId)
+    console.log('Limit check result:', limitCheck)
+
     if (!limitCheck.allowed) {
-      console.log('Query API: Website limits exceeded', { 
-        reason: limitCheck.reason, 
+      console.log('Query API: Website limits exceeded', {
+        reason: limitCheck.reason,
         limit: limitCheck.limit,
-        usage: limitCheck.usage 
+        usage: limitCheck.usage
       })
-      
+
       const errorResponse = NextResponse.json({
         error: 'Usage limit exceeded',
         reason: limitCheck.reason,
@@ -49,20 +71,22 @@ export async function POST(request: NextRequest) {
         usage: limitCheck.usage,
         upgradeRequired: true
       }, { status: 429 })
-      
+
       // Add CORS headers
       errorResponse.headers.set('Access-Control-Allow-Origin', origin || '*')
       errorResponse.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
       errorResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type')
-      
+
       return errorResponse
     }
 
+    console.log('Generating RAG response...')
     const ragResponse = await generateRAGResponse(question, websiteId, useHybrid)
     console.log('Query API: RAG response generated', {
       answerLength: ragResponse.answer.length,
       confidence: ragResponse.confidence,
-      sourcesCount: ragResponse.sources.length
+      sourcesCount: ragResponse.sources.length,
+      answer: ragResponse.answer.substring(0, 200) + '...'
     })
 
     const { error: queryError } = await supabase
@@ -97,9 +121,35 @@ export async function POST(request: NextRequest) {
     return response
 
   } catch (error) {
-    console.error('Query API: Error occurred:', error)
+    console.error('=== QUERY API ERROR ===')
+    console.error('Error type:', typeof error)
+    console.error('Error name:', error?.constructor?.name)
+    console.error('Error message:', error?.message)
+    console.error('Full error object:', error)
+    console.error('Error stack:', error?.stack)
+
+    if (error && typeof error === 'object') {
+      console.error('Error properties:', Object.keys(error))
+      if ('status' in error) {
+        console.error('HTTP Status:', error.status)
+      }
+      if ('code' in error) {
+        console.error('Error code:', error.code)
+      }
+      if ('details' in error) {
+        console.error('Error details:', error.details)
+      }
+    }
+
     const errorResponse = NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        debug: {
+          message: error?.message,
+          type: error?.constructor?.name,
+          timestamp: new Date().toISOString()
+        }
+      },
       { status: 500 }
     )
 
