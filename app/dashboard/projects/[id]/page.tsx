@@ -177,14 +177,14 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b">
+      <nav className="bg-white">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </div>
+          </Link>
         </div>
       </nav>
 
@@ -197,14 +197,12 @@ export default function ProjectPage() {
             </div>
             <div className="flex space-x-2">
               <Link href={`/dashboard/projects/${projectId}/analytics`}>
-                <Button variant="outline" size="sm">
-                  <BarChart3 className="w-4 h-4 mr-2" />
+                <Button size="sm">
                   Analytics
                 </Button>
               </Link>
               <Link href={`/dashboard/projects/${projectId}/customize`}>
-                <Button variant="outline" size="sm">
-                  <Palette className="w-4 h-4 mr-2" />
+                <Button size="sm">
                   Customize
                 </Button>
               </Link>
@@ -214,10 +212,9 @@ export default function ProjectPage() {
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="space-y-6">
-            <Card>
+            <Card className="border-0 bg-white shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Upload className="w-5 h-5 mr-2" />
+                <CardTitle>
                   Add Content
                 </CardTitle>
                 <CardDescription>
@@ -231,14 +228,12 @@ export default function ProjectPage() {
                       variant={uploadType === 'website' ? 'default' : 'outline'}
                       onClick={() => setUploadType('website')}
                     >
-                      <Globe className="w-4 h-4 mr-2" />
                       Website
                     </Button>
                     <Button
                       variant={uploadType === 'document' ? 'default' : 'outline'}
                       onClick={() => setUploadType('document')}
                     >
-                      <FileText className="w-4 h-4 mr-2" />
                       Document
                     </Button>
                   </div>
@@ -292,10 +287,9 @@ export default function ProjectPage() {
           </div>
 
           <div className="space-y-6">
-            <Card>
+            <Card className="border-0 bg-white shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MessageCircle className="w-5 h-5 mr-2" />
+                <CardTitle>
                   Embed Widget
                 </CardTitle>
                 <CardDescription>
@@ -326,7 +320,7 @@ export default function ProjectPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-0 bg-white shadow-lg">
               <CardHeader>
                 <CardTitle>Widget Preview</CardTitle>
                 <CardDescription>

@@ -35,6 +35,24 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Handle authentication redirects
+  const { pathname } = request.nextUrl
+
+  // If user is authenticated and trying to access auth pages, redirect to dashboard
+  if (user && (pathname === '/login' || pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // If user is not authenticated and trying to access protected routes, redirect to login
+  if (!user && pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // If user is authenticated and on homepage, redirect to dashboard
+  if (user && pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
   // 1. Pass the request in it, like so:

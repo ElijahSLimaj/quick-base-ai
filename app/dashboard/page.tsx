@@ -4,13 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Plus, Globe, FileText, MessageCircle, Settings, Trash2 } from 'lucide-react'
+import { Plus, FileText, MessageCircle, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useNotification } from '@/contexts/NotificationContext'
-import { PlanLimitGuard } from '@/components/billing/PlanLimitGuard'
-import { UsageDisplay } from '@/components/billing/UsageDisplay'
+import { PlanLimitBanner } from '@/components/billing/PlanLimitBanner'
 
 interface Website {
   id: string
@@ -158,7 +157,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b">
+      <nav className="bg-white">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -167,31 +166,29 @@ export default function DashboardPage() {
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
           </Link>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={handleSignOut}>
+            <Button onClick={handleSignOut}>
               Sign Out
             </Button>
           </div>
         </div>
       </nav>
 
+      <PlanLimitBanner action="create_website" />
+
       <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Your Websites</h1>
                 <p className="text-gray-600 mt-2">Manage your AI support widgets</p>
               </div>
-              <PlanLimitGuard action="create_website">
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Website
-                </Button>
-              </PlanLimitGuard>
+              <Button onClick={() => setShowCreateForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Website
+              </Button>
             </div>
 
         {showCreateForm && (
-          <Card className="mb-8">
+          <Card className="mb-8 border-0 bg-white shadow-lg">
             <CardHeader>
               <CardTitle>Create New Website</CardTitle>
               <CardDescription>
@@ -232,7 +229,7 @@ export default function DashboardPage() {
                   <Button type="submit" disabled={creating}>
                     {creating ? 'Creating...' : 'Create Website'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                  <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
                     Cancel
                   </Button>
                 </div>
@@ -251,14 +248,14 @@ export default function DashboardPage() {
             </DialogHeader>
             <DialogFooter className="gap-2">
               <Button
-                className="bg-white text-black border border-gray-800 hover:bg-gray-50"
+                variant="secondary"
                 onClick={() => setShowDeleteConfirm(null)}
                 disabled={deletingWebsite === showDeleteConfirm}
               >
                 Cancel
               </Button>
               <Button
-                className="bg-white text-red-600 hover:bg-gray-50"
+                variant="destructive"
                 onClick={() => handleDeleteWebsite(showDeleteConfirm!)}
                 disabled={deletingWebsite === showDeleteConfirm}
               >
@@ -269,39 +266,32 @@ export default function DashboardPage() {
         </Dialog>
 
         {websites.length === 0 ? (
-          <Card>
+          <Card className="border-0 bg-white shadow-lg">
             <CardContent className="text-center py-12">
-              <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No websites yet</h3>
               <p className="text-gray-600 mb-4">Create your first website to get started</p>
-              <PlanLimitGuard action="create_website">
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Website
-                </Button>
-              </PlanLimitGuard>
+              <Button onClick={() => setShowCreateForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Website
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {websites.map((website) => (
-              <Card key={website.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <Card key={website.id} className="border-0 bg-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{website.name}</CardTitle>
                     <div className="flex space-x-1">
-                      <Button variant="ghost" size="sm">
-                        <Settings className="w-4 h-4" />
-                      </Button>
                       <Button
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
                           setShowDeleteConfirm(website.id)
                         }}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -335,13 +325,6 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-          </div>
-
-          {/* Sidebar with Usage Display */}
-          <div className="lg:col-span-1">
-            <UsageDisplay className="sticky top-8" />
-          </div>
-        </div>
       </main>
     </div>
   )

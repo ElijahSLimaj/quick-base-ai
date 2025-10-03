@@ -36,12 +36,12 @@ interface AnalyticsData {
 
 interface AnalyticsDashboardProps {
   projectId: string
+  timeRange?: string
 }
 
-export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
+export default function AnalyticsDashboard({ projectId, timeRange = '7d' }: AnalyticsDashboardProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState('7d')
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -95,22 +95,10 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Analytics</h2>
-        <div className="flex space-x-2">
-          {['1d', '7d', '30d'].map((range) => (
-            <Button
-              key={range}
-              variant={timeRange === range ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTimeRange(range)}
-            >
-              {range === '1d' ? 'Today' : range === '7d' ? '7 Days' : '30 Days'}
-            </Button>
-          ))}
-        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Queries</CardTitle>
             <MessageCircle className="h-4 w-4 text-muted-foreground" />
@@ -123,7 +111,7 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Content Pieces</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
@@ -136,7 +124,7 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Confidence</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -151,7 +139,7 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Week</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -166,7 +154,7 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader>
             <CardTitle>Confidence Distribution</CardTitle>
             <CardDescription>
@@ -200,7 +188,7 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader>
             <CardTitle>Top Queries</CardTitle>
             <CardDescription>
@@ -225,7 +213,7 @@ export default function AnalyticsDashboard({ projectId }: AnalyticsDashboardProp
       </div>
 
       {analytics.lowConfidenceQueries.length > 0 && (
-        <Card>
+        <Card className="border-0 bg-white shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center">
               <ThumbsDown className="h-5 w-5 mr-2 text-red-500" />

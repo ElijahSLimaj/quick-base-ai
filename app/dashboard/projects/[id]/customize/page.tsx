@@ -98,14 +98,14 @@ export default function CustomizePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b">
+      <nav className="bg-white">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </div>
+          </Link>
         </div>
       </nav>
 
@@ -113,18 +113,10 @@ export default function CustomizePage() {
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <Link href={`/dashboard/projects/${projectId}`}>
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Project
+              <Button size="sm">
+                <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <Palette className="w-8 h-8 mr-3" />
-                Customize Widget
-              </h1>
-              <p className="text-gray-600 mt-2">Personalize your AI support widget</p>
-            </div>
           </div>
         </div>
 

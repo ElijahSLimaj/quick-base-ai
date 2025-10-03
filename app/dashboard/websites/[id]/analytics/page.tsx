@@ -15,6 +15,7 @@ export default function AnalyticsPage() {
   const [website, setWebsite] = useState<{ id: string; name: string; domain: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
+  const [timeRange, setTimeRange] = useState('7d')
   const supabase = createClient()
 
   const checkUser = useCallback(async () => {
@@ -80,37 +81,41 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b">
+      <nav className="bg-white">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </div>
+          </Link>
         </div>
       </nav>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <Link href={`/dashboard/websites/${websiteId}`}>
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Website
+              <Button size="sm">
+                <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <BarChart3 className="w-8 h-8 mr-3" />
-                Analytics
-              </h1>
-              <p className="text-gray-600 mt-2">{website.name}</p>
+            <div className="flex space-x-2">
+              {['1d', '7d', '30d'].map((range) => (
+                <Button
+                  key={range}
+                  variant={timeRange === range ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeRange(range)}
+                >
+                  {range === '1d' ? 'Today' : range === '7d' ? '7 Days' : '30 Days'}
+                </Button>
+              ))}
             </div>
           </div>
         </div>
 
-        <AnalyticsDashboard projectId={websiteId} />
+        <AnalyticsDashboard projectId={websiteId} timeRange={timeRange} />
       </main>
     </div>
   )

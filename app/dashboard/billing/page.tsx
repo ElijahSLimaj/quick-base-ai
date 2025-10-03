@@ -89,7 +89,7 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b">
+      <nav className="bg-white">
         <div className="container mx-auto px-4 py-4">
           <Link
             href="/dashboard"
@@ -123,7 +123,7 @@ export default function BillingPage() {
                     <p className="text-sm text-gray-600">Current Plan</p>
                     <p className="text-2xl font-bold capitalize">{currentPlan}</p>
                   </div>
-                  <Button onClick={handleManageBilling} variant="outline">
+                  <Button onClick={handleManageBilling} variant="secondary">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Manage Billing
                   </Button>

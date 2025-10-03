@@ -29,15 +29,8 @@ export async function planGuard(
       .select('id')
       .eq('owner_id', user.id)
 
-    if (!websites) {
-      return NextResponse.json(
-        { error: 'No websites found' },
-        { status: 404 }
-      )
-    }
-
-    const siteCount = websites.length
-    const websiteIds = websites.map(w => w.id)
+    const siteCount = websites?.length || 0
+    const websiteIds = websites?.map(w => w.id) || []
 
     // Get user's subscription
     const { data: subscriptions } = await supabase
