@@ -67,7 +67,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle className="text-xl font-semibold">Upload or Crawl</CardTitle>
                 <CardDescription className="text-gray-600">
-                  Paste a URL or upload your docs. QuickBase AI ingests your content automatically.
+                  Crawl websites, SaaS docs, ecommerce sites, or upload PDFs, Word docs, and text files. QuickBase AI ingests everything automatically.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -103,7 +103,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle className="text-xl font-semibold">Always Fresh</CardTitle>
                 <CardDescription className="text-gray-600">
-                  Automatic re-crawls keep answers up to date with zero maintenance.
+                  Automatic re-crawls keep your content up to date across all platforms with zero maintenance.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -232,7 +232,7 @@ export default function HomePage() {
               Ready to get started?
             </h2>
             <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-              Join hundreds of teams already using QuickBase AI to provide instant support.
+              Join hundreds of teams already using QuickBase AI to provide instant support across websites, SaaS platforms, and ecommerce stores.
             </p>
             <Link href="/signup">
               <Button size="lg" className="text-lg px-10 py-4 bg-white text-blue-600 hover:bg-gray-50 shadow-xl">
