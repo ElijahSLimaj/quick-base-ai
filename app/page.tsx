@@ -32,10 +32,10 @@ export default function HomePage() {
         <section className="container mx-auto px-4 py-24 text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-6xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-8 leading-tight">
-              Turn your website into instant answers
+              Turn any platform into instant answers
             </h1>
             <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-              QuickBase AI converts your existing content into a smart support widget that answers customer questions 24/7—without writing a single FAQ.
+              QuickBase AI converts your websites, SaaS docs, ecommerce content, and documents into a smart support widget that answers customer questions 24/7—without writing a single FAQ.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup">

@@ -20,10 +20,9 @@ export interface UsageData {
 }
 
 export class SubscriptionService {
-  private supabase = createClient()
-
   async getSubscription(websiteId: string): Promise<SubscriptionData | null> {
-    const { data, error } = await this.supabase
+    const supabase = await createClient()
+    const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('website_id', websiteId)
@@ -34,7 +33,8 @@ export class SubscriptionService {
   }
 
   async getUserSubscriptions(userId: string): Promise<SubscriptionData[]> {
-    const { data: websites } = await this.supabase
+    const supabase = await createClient()
+    const { data: websites } = await supabase
       .from('websites')
       .select('id')
       .eq('owner_id', userId)
@@ -43,7 +43,7 @@ export class SubscriptionService {
 
     const websiteIds = websites.map(w => w.id)
 
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
       .in('website_id', websiteIds)
@@ -53,7 +53,8 @@ export class SubscriptionService {
   }
 
   async getCurrentUsage(userId: string): Promise<UsageData> {
-    const { data: websites } = await this.supabase
+    const supabase = await createClient()
+    const { data: websites } = await supabase
       .from('websites')
       .select('id')
       .eq('owner_id', userId)
@@ -66,7 +67,7 @@ export class SubscriptionService {
 
     const websiteIds = websites.map(w => w.id)
 
-    const { data: subscriptions } = await this.supabase
+    const { data: subscriptions } = await supabase
       .from('subscriptions')
       .select('usage_count')
       .in('website_id', websiteIds)
@@ -125,9 +126,22 @@ export class SubscriptionService {
   }
 
   async incrementUsage(websiteId: string): Promise<void> {
-    await this.supabase.rpc('increment_usage', {
-      website_id: websiteId
-    })
+    const supabase = await createClient()
+    
+    // First get the current usage count
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('usage_count')
+      .eq('website_id', websiteId)
+      .single()
+    
+    if (subscription) {
+      // Increment the usage count
+      await supabase
+        .from('subscriptions')
+        .update({ usage_count: (subscription.usage_count || 0) + 1 })
+        .eq('website_id', websiteId)
+    }
   }
 
   async createSubscription(data: {
@@ -136,7 +150,8 @@ export class SubscriptionService {
     stripeSubscriptionId: string
     status: string
   }): Promise<void> {
-    await this.supabase
+    const supabase = await createClient()
+    await supabase
       .from('subscriptions')
       .insert({
         website_id: data.websiteId,
@@ -151,14 +166,16 @@ export class SubscriptionService {
     plan?: PlanKey
     status?: string
   }): Promise<void> {
-    await this.supabase
+    const supabase = await createClient()
+    await supabase
       .from('subscriptions')
       .update(updates)
       .eq('id', subscriptionId)
   }
 
   async resetMonthlyUsage(): Promise<void> {
-    await this.supabase
+    const supabase = await createClient()
+    await supabase
       .from('subscriptions')
       .update({ usage_count: 0 })
       .neq('status', 'canceled')
@@ -167,7 +184,8 @@ export class SubscriptionService {
   private async getUpgradeUrl(userId: string, currentPlan: PlanKey): Promise<string> {
     const nextPlan = currentPlan === 'starter' ? 'pro' : 'enterprise'
 
-    const { data: customer } = await this.supabase
+    const supabase = await createClient()
+    const { data: customer } = await supabase
       .from('websites')
       .select('stripe_customer_id')
       .eq('owner_id', userId)

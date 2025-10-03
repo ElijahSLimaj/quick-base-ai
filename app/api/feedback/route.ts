@@ -21,15 +21,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
+    const { data: website, error: websiteError } = await supabase
+      .from('websites')
       .select('*')
       .eq('id', projectId)
       .eq('owner_id', user.id)
       .single()
 
-    if (projectError || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    if (websiteError || !website) {
+      return NextResponse.json({ error: 'Website not found' }, { status: 404 })
     }
 
     const { data: query, error: queryError } = await supabase

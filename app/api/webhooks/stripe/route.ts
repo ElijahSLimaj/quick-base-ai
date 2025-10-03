@@ -65,7 +65,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string
   const plan = getPlanFromPriceId(subscription.items.data[0]?.price.id)
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: website } = await supabase
     .from('websites')
@@ -102,16 +102,20 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  if (invoice.subscription) {
-    await subscriptionService.updateSubscription(invoice.subscription as string, {
+  // Access subscription ID from invoice metadata or use type assertion
+  const subscriptionId = (invoice as any).subscription as string
+  if (subscriptionId) {
+    await subscriptionService.updateSubscription(subscriptionId, {
       status: 'active'
     })
   }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  if (invoice.subscription) {
-    await subscriptionService.updateSubscription(invoice.subscription as string, {
+  // Access subscription ID from invoice metadata or use type assertion
+  const subscriptionId = (invoice as any).subscription as string
+  if (subscriptionId) {
+    await subscriptionService.updateSubscription(subscriptionId, {
       status: 'past_due'
     })
   }

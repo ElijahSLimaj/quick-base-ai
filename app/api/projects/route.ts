@@ -10,8 +10,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: projects, error } = await supabase
-      .from('projects')
+    const { data: websites, error } = await supabase
+      .from('websites')
       .select(`
         *,
         content(count),
@@ -21,11 +21,11 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching projects:', error)
-      return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })
+      console.error('Error fetching websites:', error)
+      return NextResponse.json({ error: 'Failed to fetch websites' }, { status: 500 })
     }
 
-    return NextResponse.json({ projects })
+    return NextResponse.json({ projects: websites })
 
   } catch (error) {
     console.error('Projects GET error:', error)
@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and domain are required' }, { status: 400 })
     }
 
-    const { data: project, error } = await supabase
-      .from('projects')
+    const { data: website, error } = await supabase
+      .from('websites')
       .insert({
         name,
         domain,
@@ -64,11 +64,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating project:', error)
-      return NextResponse.json({ error: 'Failed to create project' }, { status: 500 })
+      console.error('Error creating website:', error)
+      return NextResponse.json({ error: 'Failed to create website' }, { status: 500 })
     }
 
-    return NextResponse.json({ project })
+    return NextResponse.json({ project: website })
 
   } catch (error) {
     console.error('Projects POST error:', error)
@@ -94,26 +94,26 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // Verify the project belongs to the user before deleting
-    const { data: project, error: fetchError } = await supabase
-      .from('projects')
+    // Verify the website belongs to the user before deleting
+    const { data: website, error: fetchError } = await supabase
+      .from('websites')
       .select('id')
       .eq('id', projectId)
       .eq('owner_id', user.id)
       .single()
 
-    if (fetchError || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    if (fetchError || !website) {
+      return NextResponse.json({ error: 'Website not found' }, { status: 404 })
     }
 
     // Delete associated content and queries first (if needed)
     // Note: If you have foreign key constraints with CASCADE, this might not be necessary
-    await supabase.from('content').delete().eq('project_id', projectId)
-    await supabase.from('queries').delete().eq('project_id', projectId)
+    await supabase.from('content').delete().eq('website_id', projectId)
+    await supabase.from('queries').delete().eq('website_id', projectId)
 
-    // Delete the project
+    // Delete the website
     const { error: deleteError } = await supabase
-      .from('projects')
+      .from('websites')
       .delete()
       .eq('id', projectId)
       .eq('owner_id', user.id)

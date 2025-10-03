@@ -80,13 +80,21 @@ export async function planGuard(
 
       // Increment usage if websiteId provided
       if (options.websiteId) {
-        await supabase
+        const { data: subscription } = await supabase
           .from('subscriptions')
-          .update({
-            usage_count: supabase.sql`usage_count + 1`,
-            updated_at: new Date().toISOString()
-          })
+          .select('usage_count')
           .eq('website_id', options.websiteId)
+          .single()
+        
+        if (subscription) {
+          await supabase
+            .from('subscriptions')
+            .update({
+              usage_count: (subscription.usage_count || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('website_id', options.websiteId)
+        }
       }
     }
 

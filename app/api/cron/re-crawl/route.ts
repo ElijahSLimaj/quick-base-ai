@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
                 .insert({
                   content_id: contentRecord.id,
                   text: chunk.text,
-                  embedding,
+                  embedding: JSON.stringify(embedding),
                   metadata: chunk.metadata
                 })
               

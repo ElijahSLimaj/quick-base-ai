@@ -28,7 +28,7 @@ export async function getProjectUsage(websiteId: string): Promise<UsageStats> {
   const { count: sitesCount } = await supabase
     .from('websites')
     .select('*', { count: 'exact', head: true })
-    .eq('owner_id', website.owner_id)
+    .eq('owner_id', website.owner_id!)
   
   // Count queries this month
   const { count: queriesThisMonth } = await supabase
@@ -98,13 +98,21 @@ export async function incrementQueryUsage(websiteId: string): Promise<void> {
   const supabase = createServiceClient()
   
   // Increment usage count in subscription table
-  await supabase
+  const { data: subscription } = await supabase
     .from('subscriptions')
-    .update({ 
-      usage_count: supabase.sql`usage_count + 1`,
-      updated_at: new Date().toISOString()
-    })
+    .select('usage_count')
     .eq('website_id', websiteId)
+    .single()
+  
+  if (subscription) {
+    await supabase
+      .from('subscriptions')
+      .update({ 
+        usage_count: (subscription.usage_count || 0) + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('website_id', websiteId)
+  }
 }
 
 export async function getUsageForBilling(websiteId: string): Promise<{
