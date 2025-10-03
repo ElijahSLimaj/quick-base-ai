@@ -37,7 +37,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       }
     }
 
-    throw new Error(`Failed to generate embedding: ${error?.message}. Please check your OpenAI configuration.`)
+    throw new Error(`Failed to generate embedding: ${(error as any)?.message}. Please check your OpenAI configuration.`)
   }
 }
 
@@ -101,7 +101,7 @@ Context: ${context.join('\n\n')}`
       }
     }
 
-    throw new Error(`Failed to generate answer: ${error?.message}. Please check your OpenAI configuration.`)
+    throw new Error(`Failed to generate answer: ${(error as any)?.message}. Please check your OpenAI configuration.`)
   }
 }
 

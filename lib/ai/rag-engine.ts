@@ -150,9 +150,9 @@ export async function generateRAGResponse(
     console.error('=== RAG ENGINE ERROR ===')
     console.error('RAG response error:', error)
     console.error('Error type:', typeof error)
-    console.error('Error message:', error?.message)
-    console.error('Error stack:', error?.stack)
-    throw new Error(`Failed to generate RAG response: ${error?.message}`)
+    console.error('Error message:', (error as any)?.message)
+    console.error('Error stack:', (error as any)?.stack)
+    throw new Error(`Failed to generate RAG response: ${(error as any)?.message}`)
   }
 }
 

@@ -123,21 +123,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('=== QUERY API ERROR ===')
     console.error('Error type:', typeof error)
-    console.error('Error name:', error?.constructor?.name)
-    console.error('Error message:', error?.message)
+    console.error('Error name:', (error as any)?.constructor?.name)
+    console.error('Error message:', (error as any)?.message)
     console.error('Full error object:', error)
-    console.error('Error stack:', error?.stack)
+    console.error('Error stack:', (error as any)?.stack)
 
     if (error && typeof error === 'object') {
       console.error('Error properties:', Object.keys(error))
       if ('status' in error) {
-        console.error('HTTP Status:', error.status)
+        console.error('HTTP Status:', (error as any).status)
       }
       if ('code' in error) {
-        console.error('Error code:', error.code)
+        console.error('Error code:', (error as any).code)
       }
       if ('details' in error) {
-        console.error('Error details:', error.details)
+        console.error('Error details:', (error as any).details)
       }
     }
 
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
       {
         error: 'Internal server error',
         debug: {
-          message: error?.message,
-          type: error?.constructor?.name,
+          message: (error as any)?.message,
+          type: (error as any)?.constructor?.name,
           timestamp: new Date().toISOString()
         }
       },
