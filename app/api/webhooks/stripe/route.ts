@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { subscriptionService } from '@/lib/billing/subscription'
 import { createClient } from '@/lib/supabase/server'
 import { type PlanKey } from '@/lib/billing/plans'
+import { getPlanFromPriceId } from '@/lib/billing/price-ids'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -63,7 +64,13 @@ export async function POST(request: NextRequest) {
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string
-  const plan = getPlanFromPriceId(subscription.items.data[0]?.price.id)
+  const priceId = subscription.items.data[0]?.price.id
+  const planInfo = getPlanFromPriceId(priceId)
+  
+  if (!planInfo) {
+    console.error('Unknown price ID in subscription:', priceId)
+    return
+  }
 
   const supabase = await createClient()
 
@@ -80,17 +87,23 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   await subscriptionService.createSubscription({
     websiteId: website.id,
-    plan,
+    plan: planInfo.plan,
     stripeSubscriptionId: subscription.id,
     status: subscription.status
   })
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const plan = getPlanFromPriceId(subscription.items.data[0]?.price.id)
+  const priceId = subscription.items.data[0]?.price.id
+  const planInfo = getPlanFromPriceId(priceId)
+  
+  if (!planInfo) {
+    console.error('Unknown price ID in subscription update:', priceId)
+    return
+  }
 
   await subscriptionService.updateSubscription(subscription.id, {
-    plan,
+    plan: planInfo.plan,
     status: subscription.status
   })
 }
@@ -121,11 +134,4 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   }
 }
 
-function getPlanFromPriceId(priceId?: string): PlanKey {
-  const priceToplan: Record<string, PlanKey> = {
-    [process.env.STRIPE_STARTER_PRICE_ID!]: 'starter',
-    [process.env.STRIPE_PRO_PRICE_ID!]: 'pro'
-  }
-
-  return priceToplan[priceId || ''] || 'starter'
-}
+// Removed - now using unified getPlanFromPriceId from price-ids.ts

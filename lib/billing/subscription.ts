@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getPlanLimits, isWithinLimits, type PlanKey } from './plans'
+import { getPriceId, type BillingPeriod } from './price-ids'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -268,7 +269,7 @@ export class SubscriptionService {
     })
   }
 
-  private async getUpgradeUrl(userId: string, currentPlan: PlanKey): Promise<string> {
+  private async getUpgradeUrl(userId: string, currentPlan: PlanKey, billingPeriod: BillingPeriod = 'monthly'): Promise<string> {
     const nextPlan = currentPlan === 'trial' || currentPlan === 'expired_trial'
       ? 'starter'
       : currentPlan === 'starter' ? 'pro' : 'enterprise'
@@ -288,9 +289,13 @@ export class SubscriptionService {
       return '/contact'
     }
 
-    const priceId = currentPlan === 'trial' || currentPlan === 'expired_trial'
-      ? process.env.STRIPE_STARTER_TRIAL_PRICE_ID
-      : process.env[`STRIPE_${nextPlan.toUpperCase()}_TRIAL_PRICE_ID`]
+    // Use unified price ID mapping
+    const priceId = getPriceId(nextPlan, billingPeriod)
+
+    if (!priceId) {
+      console.error(`No price ID found for plan: ${nextPlan}, billing: ${billingPeriod}`)
+      return '/dashboard/billing'
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customer.stripe_customer_id,

@@ -15,6 +15,7 @@ interface PricingCardsProps {
 
 export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: PricingCardsProps) {
   const [loading, setLoading] = useState<PlanKey | null>(null)
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
 
   const handleUpgrade = async (plan: PlanKey) => {
     if (!websiteId) return
@@ -30,7 +31,7 @@ export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: 
       const response = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, websiteId })
+        body: JSON.stringify({ plan, websiteId, billingPeriod })
       })
 
       if (response.ok) {
@@ -78,7 +79,37 @@ export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: 
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-6">
+    <div className="space-y-6">
+      {/* Billing Period Toggle */}
+      <div className="flex justify-center">
+        <div className="bg-gray-100 p-1 rounded-lg">
+          <button
+            onClick={() => setBillingPeriod('monthly')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              billingPeriod === 'monthly'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingPeriod('yearly')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              billingPeriod === 'yearly'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Yearly
+            <span className="ml-1 text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+              Save 20%
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-6">
       {Object.entries(PLANS).map(([key, plan]) => {
         const planKey = key as PlanKey
         const config = planConfig[planKey]
@@ -105,8 +136,14 @@ export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: 
               </div>
               <CardTitle className="text-2xl">{plan.name}</CardTitle>
               <div className="text-3xl font-bold">
-                {plan.price ? `$${plan.price / 100}` : 'Custom'}
-                {plan.price && <span className="text-sm font-normal text-gray-600">/month</span>}
+                {plan.price ? (
+                  <>
+                    ${plan.price[billingPeriod] / 100}
+                    <span className="text-lg font-normal text-gray-500">
+                      /{billingPeriod === 'monthly' ? 'month' : 'year'}
+                    </span>
+                  </>
+                ) : 'Custom'}
               </div>
               <CardDescription>
                 {getplanDescription(planKey)}
@@ -184,6 +221,7 @@ export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: 
           </Card>
         )
       })}
+      </div>
     </div>
   )
 }

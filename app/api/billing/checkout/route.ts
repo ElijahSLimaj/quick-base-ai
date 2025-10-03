@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
 import { type PlanKey } from '@/lib/billing/plans'
+import { getPriceId, type BillingPeriod, validatePriceIds } from '@/lib/billing/price-ids'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -19,12 +20,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { plan, websiteId } = await request.json()
+    const { plan, websiteId, billingPeriod = 'monthly' } = await request.json()
 
     if (!plan || !websiteId) {
       return NextResponse.json(
         { error: 'Plan and website ID are required' },
         { status: 400 }
+      )
+    }
+
+    // Validate price IDs are configured
+    const priceValidation = validatePriceIds()
+    if (!priceValidation.valid) {
+      console.error('Missing Stripe price IDs:', priceValidation.missing)
+      return NextResponse.json(
+        { error: 'Payment configuration error' },
+        { status: 500 }
       )
     }
 
@@ -63,12 +74,12 @@ export async function POST(request: NextRequest) {
         .eq('id', websiteId)
     }
 
-    // Get price ID for the plan
-    const priceId = getPriceId(plan as PlanKey)
+    // Get price ID for the plan and billing period
+    const priceId = getPriceId(plan as PlanKey, billingPeriod as BillingPeriod)
 
     if (!priceId) {
       return NextResponse.json(
-        { error: 'Invalid plan' },
+        { error: 'Invalid plan or billing period' },
         { status: 400 }
       )
     }
@@ -103,14 +114,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function getPriceId(plan: PlanKey): string | null {
-  const priceIds = {
-    trial: null, // Trial is free, no Stripe price needed
-    starter: process.env.STRIPE_STARTER_PRICE_ID,
-    pro: process.env.STRIPE_PRO_PRICE_ID,
-    enterprise: null, // Enterprise uses custom pricing, not Stripe
-    expired_trial: null // Expired trial can't use checkout
-  } as const
-
-  return priceIds[plan as keyof typeof priceIds] || null
-}
+// Removed - now using unified getPriceId from price-ids.ts

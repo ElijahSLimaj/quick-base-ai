@@ -2,7 +2,7 @@
 export const PLANS = {
   trial: {
     name: 'Free Trial',
-    price: 0,
+    price: { monthly: 0, yearly: 0 },
     interval: 'month' as const,
     features: {
       sites: 1,
@@ -13,7 +13,7 @@ export const PLANS = {
   },
   starter: {
     name: 'Starter',
-    price: 1900, // $19.00 in cents
+    price: { monthly: 1900, yearly: 15200 }, // $19/month, $152/year (20% off)
     interval: 'month' as const,
     features: {
       sites: 1,
@@ -24,7 +24,7 @@ export const PLANS = {
   },
   pro: {
     name: 'Pro',
-    price: 4900, // $49.00 in cents
+    price: { monthly: 4900, yearly: 39200 }, // $49/month, $392/year (20% off)
     interval: 'month' as const,
     features: {
       sites: 3,
