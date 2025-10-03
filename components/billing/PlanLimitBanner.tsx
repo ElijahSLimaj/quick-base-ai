@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { clientSubscriptionService } from '@/lib/billing/subscription-client'
 import { Button } from '@/components/ui/button'
-import { X } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
+import { PricingDialog } from '@/components/PricingDialog'
 
 interface PlanLimitBannerProps {
   action: 'create_website' | 'query'
@@ -21,6 +22,7 @@ export function PlanLimitBanner({ action }: PlanLimitBannerProps) {
   const [limitStatus, setLimitStatus] = useState<LimitStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
+  const [showPricingDialog, setShowPricingDialog] = useState(false)
 
   useEffect(() => {
     checkLimits()
@@ -51,9 +53,7 @@ export function PlanLimitBanner({ action }: PlanLimitBannerProps) {
   }
 
   const handleUpgrade = () => {
-    if (limitStatus.upgrade_url) {
-      window.open(limitStatus.upgrade_url, '_blank')
-    }
+    setShowPricingDialog(true)
   }
 
   const handleDismiss = () => {
@@ -61,30 +61,39 @@ export function PlanLimitBanner({ action }: PlanLimitBannerProps) {
   }
 
   return (
-    <div className="bg-red-800 text-white py-2 px-4 w-full">
-      <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <span className="text-sm font-medium">
-            {getBannerMessage(limitStatus.reason!, limitStatus.limit)}
-          </span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button
-            onClick={handleUpgrade}
-            size="sm"
-            className="bg-white text-red-800 hover:bg-gray-100 text-xs px-3 py-1"
-          >
-            Upgrade Plan
-          </Button>
-          <button
-            onClick={handleDismiss}
-            className="text-white hover:text-gray-300 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <>
+      <div className="bg-red-800 text-white py-2 px-4 w-full">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              {getBannerMessage(limitStatus.reason!, limitStatus.limit)}
+            </span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button
+              onClick={handleUpgrade}
+              size="sm"
+              className="bg-white text-red-800 hover:bg-gray-100 text-xs px-3 py-1"
+            >
+              Upgrade Plan
+            </Button>
+            <button
+              onClick={handleDismiss}
+              className="text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      
+      <PricingDialog 
+        open={showPricingDialog} 
+        onOpenChange={setShowPricingDialog}
+        currentPlan="starter"
+      />
+    </>
   )
 }
 

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Globe, MessageSquare, TrendingUp, Crown } from 'lucide-react'
+import { PricingDialog } from '@/components/PricingDialog'
 
 interface UsageDisplayProps {
   className?: string
@@ -25,6 +26,7 @@ interface UsageData {
 
 export function UsageDisplay({ className }: UsageDisplayProps) {
   const [usageData, setUsageData] = useState<UsageData | null>(null)
+  const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -85,15 +87,8 @@ export function UsageDisplay({ className }: UsageDisplayProps) {
   const sitesPercentage = limits.maxSites === -1 ? 0 : (usage.sites / limits.maxSites) * 100
   const queriesPercentage = limits.maxQueriesPerMonth === -1 ? 0 : (usage.queries / limits.maxQueriesPerMonth) * 100
 
-  const getUpgradeUrl = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const result = await clientSubscriptionService.canPerformAction(user.id, 'create_website')
-    if (result.upgrade_url) {
-      window.open(result.upgrade_url, '_blank')
-    }
+  const handleUpgrade = () => {
+    setShowPricingDialog(true)
   }
 
   return (
@@ -171,7 +166,7 @@ export function UsageDisplay({ className }: UsageDisplayProps) {
         {/* Upgrade Button */}
         {plan !== 'enterprise' && (sitesPercentage >= 80 || queriesPercentage >= 80) && (
           <Button
-            onClick={getUpgradeUrl}
+            onClick={handleUpgrade}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             size="sm"
           >
@@ -180,6 +175,12 @@ export function UsageDisplay({ className }: UsageDisplayProps) {
           </Button>
         )}
       </CardContent>
+      
+      <PricingDialog 
+        open={showPricingDialog} 
+        onOpenChange={setShowPricingDialog}
+        currentPlan={plan}
+      />
     </Card>
   )
 }
