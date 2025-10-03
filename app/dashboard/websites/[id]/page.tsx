@@ -69,7 +69,7 @@ export default function WebsitePage() {
   }, [websiteId])
 
   const generateEmbedCode = useCallback(() => {
-    const code = `<script src="${window.location.origin}/widget/embed.js" data-website-id="${websiteId}"></script>`
+    const code = `<script src="${window.location.origin}/widget/embed.js" data-project-id="${websiteId}"></script>`
     setEmbedCode(code)
   }, [websiteId])
 

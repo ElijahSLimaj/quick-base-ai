@@ -2,7 +2,7 @@
   'use strict';
   
   const CONFIG = {
-    projectId: null,
+    websiteId: null,
     apiUrl: (function() {
       // Try to get API URL from environment or fall back to QuickBase AI domain
       const script = document.currentScript;
@@ -25,8 +25,10 @@
     // Fallback if currentScript is null (happens with dynamic loading)
     if (!script) {
       const scripts = document.getElementsByTagName('script');
-      for (let i = 0; i < scripts.length; i++) {
-        if (scripts[i].src && scripts[i].src.includes('embed.js') && scripts[i].hasAttribute('data-project-id')) {
+      // Look for the most recently added script with embed.js
+      for (let i = scripts.length - 1; i >= 0; i--) {
+        if (scripts[i].src && scripts[i].src.includes('embed.js') && 
+            scripts[i].hasAttribute('data-website-id')) {
           script = scripts[i];
           break;
         }
@@ -34,11 +36,11 @@
     }
 
     if (!script) {
-      console.error('QuickBase AI: Could not find script tag with data-project-id');
+      console.error('QuickBase AI: Could not find script tag with data-website-id');
       return;
     }
 
-    CONFIG.projectId = script.getAttribute('data-project-id');
+    CONFIG.websiteId = script.getAttribute('data-website-id');
 
     // Load custom settings if provided
     const settingsAttr = script.getAttribute('data-settings');
@@ -56,10 +58,17 @@
       CONFIG.apiUrl = apiUrl;
     }
 
-    if (!CONFIG.projectId) {
-      console.error('QuickBase AI: Project ID is required');
+    if (!CONFIG.websiteId) {
+      console.error('QuickBase AI: Website ID is required');
+      console.log('QuickBase AI: Available script attributes:', {
+        'data-website-id': script.getAttribute('data-website-id'),
+        'data-api-url': script.getAttribute('data-api-url'),
+        'data-settings': script.getAttribute('data-settings')
+      });
       return;
     }
+
+    console.log('QuickBase AI: Initialized with website ID:', CONFIG.websiteId);
 
     createWidget();
   }
@@ -410,7 +419,7 @@
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       console.log('QuickBase AI: Sending request to:', CONFIG.apiUrl);
-      console.log('QuickBase AI: Project ID:', CONFIG.projectId);
+      console.log('QuickBase AI: Website ID:', CONFIG.websiteId);
 
       const response = await fetch(CONFIG.apiUrl, {
         method: 'POST',
@@ -419,7 +428,7 @@
         },
         body: JSON.stringify({
           question,
-          projectId: CONFIG.projectId
+          websiteId: CONFIG.websiteId
         }),
         signal: controller.signal
       });

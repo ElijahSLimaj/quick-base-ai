@@ -64,7 +64,7 @@ export default function ProjectPage() {
   }, [projectId])
 
   const generateEmbedCode = useCallback(() => {
-    const code = `<script src="${window.location.origin}/widget/embed.js" data-project-id="${projectId}"></script>`
+    const code = `<script src="${window.location.origin}/widget/embed.js" data-website-id="${projectId}"></script>`
     setEmbedCode(code)
   }, [projectId])
 
