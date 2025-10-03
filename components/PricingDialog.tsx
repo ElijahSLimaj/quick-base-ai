@@ -78,7 +78,10 @@ export function PricingDialog({ open, onOpenChange, currentPlan = 'starter' }: P
             Choose Your Plan
           </DialogTitle>
           <DialogDescription className="text-center text-lg">
-            All plans include a 7-day free trial. No credit card required.
+            {currentPlan === 'trial' || currentPlan === 'expired_trial'
+              ? 'Upgrade from your free trial to unlock full features'
+              : 'All plans include a 7-day free trial. No credit card required.'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -177,11 +180,14 @@ export function PricingDialog({ open, onOpenChange, currentPlan = 'starter' }: P
                   ) : isEnterprise ? (
                     <ContactForm />
                   ) : (
-                    <Button 
+                    <Button
                       onClick={() => handleUpgrade(plan.id)}
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                     >
-                      {isCurrent ? 'Current Plan' : `Upgrade to ${plan.name}`}
+                      {currentPlan === 'trial' || currentPlan === 'expired_trial'
+                        ? `Start ${plan.name} Plan`
+                        : `Upgrade to ${plan.name}`
+                      }
                     </Button>
                   )}
                 </CardContent>

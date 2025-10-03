@@ -38,6 +38,16 @@ export function PlanLimitBanner({ action }: PlanLimitBannerProps) {
         return
       }
 
+      // Check if user is on an active trial first
+      const trialStatus = await clientSubscriptionService.getTrialStatus(user.id)
+
+      // Don't show limit banners during active trial
+      if (trialStatus.isOnTrial) {
+        setLimitStatus({ allowed: true })
+        setLoading(false)
+        return
+      }
+
       const result = await clientSubscriptionService.canPerformAction(user.id, action)
       setLimitStatus(result)
     } catch (error) {
@@ -99,6 +109,8 @@ export function PlanLimitBanner({ action }: PlanLimitBannerProps) {
 
 function getBannerMessage(reason: string, limit?: number): string {
   switch (reason) {
+    case 'trial_expired':
+      return 'Your free trial has expired. Upgrade to continue using all features.'
     case 'site_limit_exceeded':
       return `You've reached your limit of ${limit} website(s). Upgrade to add more.`
     case 'query_limit_exceeded':

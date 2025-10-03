@@ -82,7 +82,7 @@ export function UsageDisplay({ className }: UsageDisplayProps) {
   }
 
   const { plan, usage, limits } = usageData
-  const planDetails = PLANS[plan]
+  const planDetails = PLANS[plan as keyof typeof PLANS] || PLANS.trial
 
   const sitesPercentage = limits.maxSites === -1 ? 0 : (usage.sites / limits.maxSites) * 100
   const queriesPercentage = limits.maxQueriesPerMonth === -1 ? 0 : (usage.queries / limits.maxQueriesPerMonth) * 100

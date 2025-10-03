@@ -105,10 +105,12 @@ export async function POST(request: NextRequest) {
 
 function getPriceId(plan: PlanKey): string | null {
   const priceIds = {
+    trial: null, // Trial is free, no Stripe price needed
     starter: process.env.STRIPE_STARTER_PRICE_ID,
     pro: process.env.STRIPE_PRO_PRICE_ID,
-    enterprise: null // Enterprise uses custom pricing, not Stripe
-  }
+    enterprise: null, // Enterprise uses custom pricing, not Stripe
+    expired_trial: null // Expired trial can't use checkout
+  } as const
 
-  return priceIds[plan] || null
+  return priceIds[plan as keyof typeof priceIds] || null
 }

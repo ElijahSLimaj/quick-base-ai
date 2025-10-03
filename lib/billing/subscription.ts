@@ -12,6 +12,9 @@ export interface SubscriptionData {
   status: string
   usage_count: number
   website_id: string
+  trial_started_at?: string
+  trial_ends_at?: string
+  plan_type: string
 }
 
 export interface UsageData {
@@ -29,7 +32,10 @@ export class SubscriptionService {
       .single()
 
     if (error || !data) return null
-    return data as SubscriptionData
+    return {
+      ...data,
+      plan_type: (data as any).plan_type || 'paid'
+    } as SubscriptionData
   }
 
   async getUserSubscriptions(userId: string): Promise<SubscriptionData[]> {
@@ -49,7 +55,10 @@ export class SubscriptionService {
       .in('website_id', websiteIds)
 
     if (error || !data) return []
-    return data as SubscriptionData[]
+    return data.map(sub => ({
+      ...sub,
+      plan_type: (sub as any).plan_type || 'paid'
+    })) as SubscriptionData[]
   }
 
   async getCurrentUsage(userId: string): Promise<UsageData> {
@@ -83,10 +92,20 @@ export class SubscriptionService {
   async getUserPlan(userId: string): Promise<PlanKey> {
     const subscriptions = await this.getUserSubscriptions(userId)
 
-    if (subscriptions.length === 0) return 'starter'
+    if (subscriptions.length === 0) return 'trial'
 
     const activeSub = subscriptions.find(sub => sub.status === 'active')
-    return (activeSub?.plan as PlanKey) || 'starter'
+    if (!activeSub) return 'trial'
+
+    // Check if trial is expired
+    if (activeSub.plan_type === 'free' && activeSub.trial_ends_at) {
+      const trialEnd = new Date(activeSub.trial_ends_at)
+      if (new Date() > trialEnd) {
+        return 'expired_trial'
+      }
+    }
+
+    return (activeSub?.plan as PlanKey) || 'trial'
   }
 
   async canPerformAction(userId: string, action: 'create_website' | 'query'): Promise<{
@@ -97,6 +116,15 @@ export class SubscriptionService {
   }> {
     const plan = await this.getUserPlan(userId)
     const usage = await this.getCurrentUsage(userId)
+
+    // Check if trial is expired
+    if (plan === 'expired_trial') {
+      return {
+        allowed: false,
+        reason: 'trial_expired',
+        upgrade_url: await this.getUpgradeUrl(userId, 'trial')
+      }
+    }
 
     if (action === 'create_website') {
       const limits = getPlanLimits(plan)
@@ -147,19 +175,40 @@ export class SubscriptionService {
   async createSubscription(data: {
     websiteId: string
     plan: PlanKey
-    stripeSubscriptionId: string
+    stripeSubscriptionId?: string
     status: string
+    isTrialStart?: boolean
   }): Promise<void> {
     const supabase = await createClient()
+
+    const subscriptionData: any = {
+      website_id: data.websiteId,
+      plan: data.plan,
+      status: data.status,
+      usage_count: 0,
+      plan_type: data.isTrialStart ? 'free' : 'paid'
+    }
+
+    if (data.stripeSubscriptionId) {
+      subscriptionData.id = data.stripeSubscriptionId
+      subscriptionData.stripe_subscription_id = data.stripeSubscriptionId
+    }
+
+    if (data.isTrialStart) {
+      const now = new Date()
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      subscriptionData.trial_started_at = now.toISOString()
+      subscriptionData.trial_ends_at = trialEnd.toISOString()
+      subscriptionData.sites_limit = 1
+      subscriptionData.answers_limit = 100
+      subscriptionData.crawls_limit = 2
+      subscriptionData.manual_recrawls_limit = 1
+      subscriptionData.auto_crawl_enabled = false
+    }
+
     await supabase
       .from('subscriptions')
-      .insert({
-        website_id: data.websiteId,
-        plan: data.plan,
-        id: data.stripeSubscriptionId,
-        status: data.status,
-        usage_count: 0
-      })
+      .insert(subscriptionData)
   }
 
   async updateSubscription(subscriptionId: string, updates: {
@@ -181,8 +230,48 @@ export class SubscriptionService {
       .neq('status', 'canceled')
   }
 
+  async getTrialStatus(userId: string): Promise<{
+    isOnTrial: boolean
+    daysLeft: number
+    trialEndsAt?: Date
+  }> {
+    const subscriptions = await this.getUserSubscriptions(userId)
+    const trialSub = subscriptions.find(sub =>
+      sub.plan_type === 'free' && sub.trial_ends_at
+    )
+
+    if (!trialSub?.trial_ends_at) {
+      return { isOnTrial: false, daysLeft: 0 }
+    }
+
+    const trialEnd = new Date(trialSub.trial_ends_at)
+    const now = new Date()
+    const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+    return {
+      isOnTrial: daysLeft > 0,
+      daysLeft: Math.max(0, daysLeft),
+      trialEndsAt: trialEnd
+    }
+  }
+
+  async startTrialForUser(websiteId: string): Promise<void> {
+    // Check if user already has a subscription for this website
+    const existingSub = await this.getSubscription(websiteId)
+    if (existingSub) return
+
+    await this.createSubscription({
+      websiteId,
+      plan: 'trial',
+      status: 'active',
+      isTrialStart: true
+    })
+  }
+
   private async getUpgradeUrl(userId: string, currentPlan: PlanKey): Promise<string> {
-    const nextPlan = currentPlan === 'starter' ? 'pro' : 'enterprise'
+    const nextPlan = currentPlan === 'trial' || currentPlan === 'expired_trial'
+      ? 'starter'
+      : currentPlan === 'starter' ? 'pro' : 'enterprise'
 
     const supabase = await createClient()
     const { data: customer } = await supabase
@@ -199,11 +288,15 @@ export class SubscriptionService {
       return '/contact'
     }
 
+    const priceId = currentPlan === 'trial' || currentPlan === 'expired_trial'
+      ? process.env.STRIPE_STARTER_TRIAL_PRICE_ID
+      : process.env[`STRIPE_${nextPlan.toUpperCase()}_TRIAL_PRICE_ID`]
+
     const session = await stripe.checkout.sessions.create({
       customer: customer.stripe_customer_id,
       mode: 'subscription',
       line_items: [{
-        price: process.env[`STRIPE_${nextPlan.toUpperCase()}_PRICE_ID`],
+        price: priceId,
         quantity: 1,
       }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?upgrade=success`,

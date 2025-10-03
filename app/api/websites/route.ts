@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { withPlanGuard } from '@/lib/middleware/plan-guard'
+import { subscriptionService } from '@/lib/billing/subscription'
 
 export async function GET() {
   try {
@@ -68,6 +69,14 @@ export const POST = withPlanGuard(
       if (error) {
         console.error('Error creating website:', error)
         return NextResponse.json({ error: 'Failed to create website' }, { status: 500 })
+      }
+
+      // Auto-start trial for new users (if they don't have a subscription)
+      try {
+        await subscriptionService.startTrialForUser(website.id)
+      } catch (trialError) {
+        console.error('Error starting trial:', trialError)
+        // Don't fail the website creation if trial setup fails
       }
 
       return NextResponse.json({ website })

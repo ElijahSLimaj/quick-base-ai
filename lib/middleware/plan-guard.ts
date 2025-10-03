@@ -35,17 +35,38 @@ export async function planGuard(
     // Get user's subscription
     const { data: subscriptions } = await supabase
       .from('subscriptions')
-      .select('plan, status, usage_count')
+      .select('*')
       .in('website_id', websiteIds)
 
     const activeSub = subscriptions?.find(sub => sub.status === 'active')
-    const plan = activeSub?.plan || 'starter'
+    let plan = activeSub?.plan || 'trial'
+
+    // Check if trial is expired
+    if ((activeSub as any)?.plan_type === 'free' && (activeSub as any)?.trial_ends_at) {
+      const trialEnd = new Date((activeSub as any).trial_ends_at)
+      if (new Date() > trialEnd) {
+        plan = 'expired_trial'
+      }
+    }
 
     // Get current usage
     const queryCount = subscriptions?.reduce((sum, sub) => sum + (sub.usage_count || 0), 0) || 0
 
     const usage = { sites: siteCount, queries: queryCount }
     const limits = getPlanLimits(plan)
+
+    // Check if trial is expired
+    if (plan === 'expired_trial') {
+      return NextResponse.json(
+        {
+          error: 'Trial expired',
+          reason: 'trial_expired',
+          upgrade_url: '/dashboard/billing',
+          message: 'Your free trial has expired. Upgrade to continue using all features.'
+        },
+        { status: 402 }
+      )
+    }
 
     // Check limits based on action
     if (options.action === 'create_website') {
@@ -110,6 +131,8 @@ export async function planGuard(
 
 function getErrorMessage(reason: string, limit?: number): string {
   switch (reason) {
+    case 'trial_expired':
+      return 'Your free trial has expired. Upgrade to continue using all features.'
     case 'site_limit_exceeded':
       return `You've reached your limit of ${limit} website(s). Upgrade your plan to add more websites.`
     case 'query_limit_exceeded':

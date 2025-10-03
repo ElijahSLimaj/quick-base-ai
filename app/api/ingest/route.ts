@@ -83,23 +83,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No content found to process' }, { status: 400 })
     }
 
-    // Clear existing content for this website before adding new content
-    console.log(`Clearing existing content for website ${websiteId}`)
-    
-    // Get all content IDs for this website first
-    const { data: existingContent } = await supabase
-      .from('content')
-      .select('id')
-      .eq('website_id', websiteId)
-    
-    if (existingContent && existingContent.length > 0) {
-      const contentIds = existingContent.map(c => c.id)
-      
-      // Delete chunks first (foreign key constraint)
-      await supabase.from('chunks').delete().in('content_id', contentIds)
-      
-      // Then delete content
-      await supabase.from('content').delete().eq('website_id', websiteId)
+    // Only clear existing content for website crawls, not documents
+    if (type === 'website') {
+      console.log(`Clearing existing website content for website ${websiteId}`)
+
+      // Get all website content IDs (not documents)
+      const { data: existingContent } = await supabase
+        .from('content')
+        .select('id')
+        .eq('website_id', websiteId)
+        .like('source_url', 'http%') // Only web URLs, not file names
+
+      if (existingContent && existingContent.length > 0) {
+        const contentIds = existingContent.map(c => c.id)
+
+        // Delete chunks first (foreign key constraint)
+        await supabase.from('chunks').delete().in('content_id', contentIds)
+
+        // Then delete content
+        await supabase.from('content').delete().in('id', contentIds)
+      }
     }
 
     const processedChunks = []
@@ -110,17 +113,19 @@ export async function POST(request: NextRequest) {
       for (const chunk of chunks) {
         const embedding = await generateEmbedding(chunk.text)
         
-        // Check if this URL already exists for this website
-        const { data: existingRecord } = await supabase
-          .from('content')
-          .select('id')
-          .eq('website_id', websiteId)
-          .eq('source_url', entry.url)
-          .single()
-        
-        if (existingRecord) {
-          console.log(`URL ${entry.url} already exists, skipping`)
-          continue
+        // For documents, check if this exact filename already exists
+        if (type === 'document') {
+          const { data: existingRecord } = await supabase
+            .from('content')
+            .select('id')
+            .eq('website_id', websiteId)
+            .eq('source_url', entry.url)
+            .single()
+
+          if (existingRecord) {
+            console.log(`Document ${entry.url} already exists, skipping`)
+            continue
+          }
         }
 
         const { data: contentRecord, error: contentError } = await supabase

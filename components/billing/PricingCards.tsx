@@ -50,6 +50,11 @@ export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: 
   }
 
   const planConfig = {
+    trial: {
+      icon: Zap,
+      color: 'bg-green-500',
+      popular: false
+    },
     starter: {
       icon: Zap,
       color: 'bg-blue-500',
@@ -63,6 +68,11 @@ export function PricingCards({ currentPlan = 'starter', websiteId, onUpgrade }: 
     enterprise: {
       icon: Building,
       color: 'bg-gray-800',
+      popular: false
+    },
+    expired_trial: {
+      icon: Zap,
+      color: 'bg-red-500',
       popular: false
     }
   }
@@ -185,9 +195,11 @@ function getCurrentPlanIndex(plan: PlanKey): number {
 
 function getplanDescription(plan: PlanKey): string {
   const descriptions = {
+    trial: 'Try all features free for 7 days',
     starter: 'Perfect for small websites getting started with AI support',
     pro: 'Ideal for growing businesses with multiple websites',
-    enterprise: 'Advanced features for large organizations'
-  }
-  return descriptions[plan]
+    enterprise: 'Advanced features for large organizations',
+    expired_trial: 'Your trial has expired - upgrade to continue'
+  } as const
+  return descriptions[plan as keyof typeof descriptions] || descriptions.starter
 }

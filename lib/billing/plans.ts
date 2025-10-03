@@ -1,5 +1,16 @@
 // Subscription plan definitions
 export const PLANS = {
+  trial: {
+    name: 'Free Trial',
+    price: 0,
+    interval: 'month' as const,
+    features: {
+      sites: 1,
+      queries: 100,
+      analytics: 'basic' as const,
+      support: 'email' as const
+    }
+  },
   starter: {
     name: 'Starter',
     price: 1900, // $19.00 in cents
@@ -35,11 +46,16 @@ export const PLANS = {
   }
 } as const
 
-export type PlanKey = keyof typeof PLANS
-export type Plan = typeof PLANS[PlanKey]
+export type PlanKey = keyof typeof PLANS | 'expired_trial'
+export type Plan = typeof PLANS[keyof typeof PLANS]
 
 // Plan limits for enforcement
 export const PLAN_LIMITS = {
+  trial: {
+    maxSites: 1,
+    maxQueriesPerMonth: 100,
+    analyticsLevel: 'basic' as const
+  },
   starter: {
     maxSites: 1,
     maxQueriesPerMonth: 2000,
@@ -58,7 +74,8 @@ export const PLAN_LIMITS = {
 } as const
 
 export function getPlanLimits(plan: string) {
-  return PLAN_LIMITS[plan as PlanKey] || PLAN_LIMITS.starter
+  if (plan === 'expired_trial') return PLAN_LIMITS.trial
+  return PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] || PLAN_LIMITS.trial
 }
 
 export function isWithinLimits(plan: string, currentUsage: { sites: number; queries: number }) {

@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Globe, FileText, MessageCircle, Copy, Check, BarChart3, Palette } from 'lucide-react'
+import { Upload, Globe, FileText, MessageCircle, Copy, Check, BarChart3, Palette, User } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useNotification } from '@/contexts/NotificationContext'
+import { HelpChatBubble } from '@/components/support/HelpChatBubble'
 
 interface Website {
   id: string
@@ -28,10 +29,15 @@ export default function WebsitePage() {
   const [uploading, setUploading] = useState(false)
   const [uploadType, setUploadType] = useState<'website' | 'document'>('website')
   const [websiteUrl, setWebsiteUrl] = useState('')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [embedCode, setEmbedCode] = useState('')
   const [copied, setCopied] = useState(false)
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
+  const [contentSources, setContentSources] = useState<Array<{
+    id: string
+    source_url: string
+    created_at: string | null
+  }>>([])
   const supabase = createClient()
 
   const checkUser = useCallback(async () => {
@@ -67,6 +73,24 @@ export default function WebsitePage() {
     setEmbedCode(code)
   }, [websiteId])
 
+  const fetchContentSources = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('content')
+        .select('id, source_url, created_at')
+        .eq('website_id', websiteId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching content sources:', error)
+      } else {
+        setContentSources(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching content sources:', error)
+    }
+  }, [websiteId, supabase])
+
   useEffect(() => {
     checkUser()
   }, [checkUser])
@@ -75,8 +99,9 @@ export default function WebsitePage() {
     if (user && websiteId) {
       fetchWebsite()
       generateEmbedCode()
+      fetchContentSources()
     }
-  }, [user, websiteId, fetchWebsite, generateEmbedCode])
+  }, [user, websiteId, fetchWebsite, generateEmbedCode, fetchContentSources])
 
   const handleWebsiteCrawl = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,6 +123,7 @@ export default function WebsitePage() {
         const data = await response.json()
         showSuccess('Website crawled successfully!', `Processed ${data.chunksProcessed} chunks from ${websiteUrl}`)
         setWebsiteUrl('')
+        fetchContentSources() // Refresh the content list
       } else {
         const error = await response.json()
         showError('Failed to crawl website', error.error)
@@ -112,31 +138,49 @@ export default function WebsitePage() {
 
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedFile) return
+    if (selectedFiles.length === 0) return
 
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('websiteId', websiteId)
-      formData.append('type', 'document')
-      formData.append('file', selectedFile)
+      let totalChunks = 0
+      const uploadedFiles: string[] = []
 
-      const response = await fetch('/api/ingest', {
-        method: 'POST',
-        body: formData
-      })
+      // Process each file sequentially
+      for (const file of selectedFiles) {
+        const formData = new FormData()
+        formData.append('websiteId', websiteId)
+        formData.append('type', 'document')
+        formData.append('file', file)
 
-      if (response.ok) {
-        const data = await response.json()
-        showSuccess('Document uploaded successfully!', `Processed ${data.chunksProcessed} chunks from ${selectedFile.name}`)
-        setSelectedFile(null)
-      } else {
-        const error = await response.json()
-        showError('Failed to upload document', error.error)
+        const response = await fetch('/api/ingest', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          totalChunks += data.chunksProcessed
+          uploadedFiles.push(file.name)
+        } else {
+          const error = await response.json()
+          showError(`Failed to upload ${file.name}`, error.error)
+        }
+      }
+
+      if (uploadedFiles.length > 0) {
+        showSuccess(
+          `${uploadedFiles.length} document(s) uploaded successfully!`,
+          `Processed ${totalChunks} chunks from: ${uploadedFiles.join(', ')}`
+        )
+        setSelectedFiles([])
+        // Reset the file input
+        const fileInput = document.getElementById('file') as HTMLInputElement
+        if (fileInput) fileInput.value = ''
+        fetchContentSources() // Refresh the content list
       }
     } catch (error) {
-      console.error('Error uploading file:', error)
-      showError('Failed to upload document', 'An unexpected error occurred')
+      console.error('Error uploading files:', error)
+      showError('Failed to upload documents', 'An unexpected error occurred')
     } finally {
       setUploading(false)
     }
@@ -184,6 +228,14 @@ export default function WebsitePage() {
             </div>
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
           </Link>
+          <div className="flex items-center space-x-4">
+            <Link href="/dashboard/profile">
+              <Button variant="outline" size="sm">
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Button>
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -261,26 +313,81 @@ export default function WebsitePage() {
                     <form onSubmit={handleFileUpload} className="space-y-4">
                       <div>
                         <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-1">
-                          Upload Document
+                          Upload Documents
                         </label>
                         <input
                           id="file"
                           type="file"
                           accept=".pdf,.docx,.md,.txt"
-                          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                          multiple
+                          onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Supported formats: PDF, DOCX, Markdown, TXT
+                          Supported formats: PDF, DOCX, Markdown, TXT • Select multiple files
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1 italic">
+                          For SaaS platforms and e-commerce sites, uploading documentation directly often provides better results than web crawling.
                         </p>
                       </div>
-                      <Button type="submit" disabled={uploading || !selectedFile}>
-                        {uploading ? 'Processing...' : 'Upload Document'}
+                      <Button type="submit" disabled={uploading || selectedFiles.length === 0}>
+                        {uploading ? 'Processing...' : `Upload ${selectedFiles.length} Document${selectedFiles.length !== 1 ? 's' : ''}`}
                       </Button>
                     </form>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle>Content Sources</CardTitle>
+                <CardDescription>
+                  Manage your website's knowledge base
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {contentSources.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No content sources yet</p>
+                    <p className="text-sm">Upload documents or crawl your website to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {contentSources.map((source) => {
+                      const isDocument = !source.source_url.startsWith('http')
+                      const icon = isDocument ? FileText : Globe
+                      const IconComponent = icon
+
+                      return (
+                        <div
+                          key={source.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <IconComponent className="w-5 h-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {isDocument
+                                  ? source.source_url
+                                  : source.source_url.replace(/^https?:\/\//, '')
+                                }
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {isDocument ? 'Document' : 'Website'} • Added {source.created_at ? new Date(source.created_at).toLocaleDateString() : 'Unknown date'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {isDocument ? '📄' : '🌐'}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -339,6 +446,8 @@ export default function WebsitePage() {
           </div>
         </div>
       </main>
+
+      <HelpChatBubble />
     </div>
   )
 }

@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Plus, FileText, MessageCircle, Trash2 } from 'lucide-react'
+import { Plus, FileText, MessageCircle, Trash2, User } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useNotification } from '@/contexts/NotificationContext'
 import { PlanLimitBanner } from '@/components/billing/PlanLimitBanner'
+import { TrialBanner } from '@/components/billing/TrialBanner'
+import { HelpChatBubble } from '@/components/support/HelpChatBubble'
 
 interface Website {
   id: string
@@ -166,13 +168,20 @@ export default function DashboardPage() {
             <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
           </Link>
           <div className="flex items-center space-x-4">
-            <Button onClick={handleSignOut}>
+            <Link href="/dashboard/profile">
+              <Button variant="outline" size="sm">
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Button>
+            </Link>
+            <Button onClick={handleSignOut} size="sm">
               Sign Out
             </Button>
           </div>
         </div>
       </nav>
 
+      <TrialBanner />
       <PlanLimitBanner action="create_website" />
 
       <main className="container mx-auto px-4 py-8">
@@ -326,6 +335,8 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      <HelpChatBubble />
     </div>
   )
 }
