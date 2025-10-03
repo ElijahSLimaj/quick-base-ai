@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Upload, MessageCircle, Shield, Zap } from "lucide-react"
@@ -5,6 +8,7 @@ import Link from "next/link"
 import { ContactForm } from "@/components/ContactForm"
 
 export default function HomePage() {
+  const [isYearly, setIsYearly] = useState(true)
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <nav className="bg-white/90 backdrop-blur-md border-b border-gray-100">
@@ -115,16 +119,52 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4">
               Simple pricing for growing teams
             </h2>
-            <p className="text-lg text-gray-600 mb-16 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
               All plans include a 7-day free trial. No credit card required.
             </p>
+            
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center mb-12">
+              <div className="bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+                <button 
+                  onClick={() => setIsYearly(false)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    !isYearly 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button 
+                  onClick={() => setIsYearly(true)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    isYearly 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Yearly
+                  <span className="ml-1 text-xs bg-green-500 text-white px-1.5 py-0.5 rounded-full">Save 20%</span>
+                </button>
+              </div>
+            </div>
             
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <Card className="border-0 bg-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                 <CardHeader className="text-center pb-6">
                   <CardTitle className="text-2xl font-bold text-gray-900">Starter</CardTitle>
                   <div className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                    $19<span className="text-xl font-normal text-gray-500">/mo</span>
+                    ${isYearly ? '15' : '19'}<span className="text-xl font-normal text-gray-500">/mo</span>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    {isYearly ? (
+                      <>
+                        <span className="line-through">$19/mo</span> • Billed annually
+                      </>
+                    ) : (
+                      'Billed monthly'
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -163,7 +203,16 @@ export default function HomePage() {
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl font-bold text-gray-900">Pro</CardTitle>
                   <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                    $49<span className="text-xl font-normal text-gray-500">/mo</span>
+                    ${isYearly ? '39' : '49'}<span className="text-xl font-normal text-gray-500">/mo</span>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    {isYearly ? (
+                      <>
+                        <span className="line-through">$49/mo</span> • Billed annually
+                      </>
+                    ) : (
+                      'Billed monthly'
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -198,6 +247,9 @@ export default function HomePage() {
                   <CardTitle className="text-2xl font-bold text-gray-900">Enterprise</CardTitle>
                   <div className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     Custom
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Monthly or yearly billing available
                   </div>
                 </CardHeader>
                 <CardContent>
