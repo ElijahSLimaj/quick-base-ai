@@ -21,7 +21,7 @@ export interface RAGResponse {
 
 export async function performVectorSearch(
   query: string,
-  projectId: string,
+  websiteId: string,
   limit: number = 10
 ): Promise<SearchResult[]> {
   const supabase = createServiceClient()
@@ -31,7 +31,7 @@ export async function performVectorSearch(
   const { data: chunks, error } = await supabase.rpc('match_chunks', {
     query_embedding: JSON.stringify(queryEmbedding),
     match_count: limit,
-    project_id: projectId
+    website_id: websiteId
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any)
 
@@ -51,12 +51,12 @@ export async function performVectorSearch(
 
 export async function performHybridSearch(
   query: string,
-  projectId: string,
+  websiteId: string,
   limit: number = 10
 ): Promise<SearchResult[]> {
   const supabase = createServiceClient()
   
-  const vectorResults = await performVectorSearch(query, projectId, Math.ceil(limit * 0.7))
+  const vectorResults = await performVectorSearch(query, websiteId, Math.ceil(limit * 0.7))
   
   const { data: keywordResults, error } = await supabase
     .from('chunks')
@@ -67,7 +67,7 @@ export async function performHybridSearch(
         source_url
       )
     `)
-    .eq('content.project_id', projectId)
+    .eq('content.website_id', websiteId)
     .textSearch('text', query.split(' ').join(' & '))
     .limit(Math.ceil(limit * 0.3))
 
@@ -96,17 +96,17 @@ export async function performHybridSearch(
 
 export async function generateRAGResponse(
   question: string,
-  projectId: string,
+  websiteId: string,
   useHybrid: boolean = true
 ): Promise<RAGResponse> {
   try {
     console.log('=== RAG ENGINE START ===')
-    console.log('Input:', { question: question.substring(0, 100), projectId, useHybrid })
+    console.log('Input:', { question: question.substring(0, 100), websiteId, useHybrid })
 
     console.log('Performing search...')
     const searchResults = useHybrid
-      ? await performHybridSearch(question, projectId, 8)
-      : await performVectorSearch(question, projectId, 8)
+      ? await performHybridSearch(question, websiteId, 8)
+      : await performVectorSearch(question, websiteId, 8)
 
     console.log('Search results:', {
       count: searchResults.length,
