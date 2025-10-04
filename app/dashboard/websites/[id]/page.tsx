@@ -37,6 +37,8 @@ export default function WebsitePage() {
     id: string
     source_url: string
     created_at: string | null
+    isGrouped?: boolean
+    count?: number
   }>>([])
   const supabase = createClient()
 
@@ -84,7 +86,40 @@ export default function WebsitePage() {
       if (error) {
         console.error('Error fetching content sources:', error)
       } else {
-        setContentSources(data || [])
+        // Group website content by domain to avoid duplicates
+        const groupedSources = (data || []).reduce((acc: any[], source) => {
+          const isWebsite = source.source_url.startsWith('http')
+          
+          if (isWebsite) {
+            // For website content, group by domain
+            const domain = new URL(source.source_url).origin
+            const existingDomain = acc.find(item => 
+              item.source_url.startsWith(domain)
+            )
+            
+            if (!existingDomain) {
+              acc.push({
+                ...source,
+                source_url: domain,
+                isGrouped: true,
+                count: 1
+              })
+            } else {
+              existingDomain.count += 1
+            }
+          } else {
+            // For documents, keep as individual entries
+            acc.push({
+              ...source,
+              isGrouped: false,
+              count: 1
+            })
+          }
+          
+          return acc
+        }, [])
+        
+        setContentSources(groupedSources)
       }
     } catch (error) {
       console.error('Error fetching content sources:', error)
@@ -302,7 +337,7 @@ export default function WebsitePage() {
                           onChange={(e) => setWebsiteUrl(e.target.value)}
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="https://example.com"
+                          placeholder="https://example.com/docs"
                         />
                       </div>
                       <Button type="submit" disabled={uploading || !websiteUrl}>
@@ -374,6 +409,11 @@ export default function WebsitePage() {
                                   ? source.source_url
                                   : source.source_url.replace(/^https?:\/\//, '')
                                 }
+                                {source.isGrouped && source.count > 1 && (
+                                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    {source.count} pages
+                                  </span>
+                                )}
                               </p>
                               <p className="text-xs text-gray-500">
                                 {isDocument ? 'Document' : 'Website'} • Added {source.created_at ? new Date(source.created_at).toLocaleDateString() : 'Unknown date'}
