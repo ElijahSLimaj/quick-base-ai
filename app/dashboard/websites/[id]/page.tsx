@@ -409,7 +409,7 @@ export default function WebsitePage() {
                                   ? source.source_url
                                   : source.source_url.replace(/^https?:\/\//, '')
                                 }
-                                {source.isGrouped && source.count > 1 && (
+                                {source.isGrouped && source.count && source.count > 1 && (
                                   <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                     {source.count} pages
                                   </span>
