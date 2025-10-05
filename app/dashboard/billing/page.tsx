@@ -11,6 +11,7 @@ import { UsageDisplay } from '@/components/billing/UsageDisplay'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { type PlanKey } from '@/lib/billing/plans'
+import { Navbar } from '@/components/Navbar'
 
 export default function BillingPage() {
   const [currentPlan, setCurrentPlan] = useState<PlanKey>('starter')
@@ -89,17 +90,7 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white">
-        <div className="container mx-auto px-4 py-4">
-          <Link
-            href="/dashboard"
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-4 gap-8">

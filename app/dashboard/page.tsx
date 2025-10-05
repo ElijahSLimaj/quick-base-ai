@@ -12,6 +12,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { PlanLimitBanner } from '@/components/billing/PlanLimitBanner'
 import { TrialBanner } from '@/components/billing/TrialBanner'
 import { HelpChatBubble } from '@/components/support/HelpChatBubble'
+import { Navbar } from '@/components/Navbar'
 
 interface Website {
   id: string
@@ -159,27 +160,11 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">QB</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard/profile">
-              <Button variant="outline" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Profile
-              </Button>
-            </Link>
-            <Button onClick={handleSignOut} size="sm">
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar 
+        showProfile={true} 
+        showSignOut={true} 
+        onSignOut={handleSignOut} 
+      />
 
       <TrialBanner />
       <PlanLimitBanner action="create_website" />

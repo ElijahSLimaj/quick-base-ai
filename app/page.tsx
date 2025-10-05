@@ -6,31 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle, Upload, MessageCircle, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 import { ContactForm } from "@/components/ContactForm"
+import { PublicNavbar } from "@/components/PublicNavbar"
 
 export default function HomePage() {
   const [isYearly, setIsYearly] = useState(true)
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <nav className="bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">QB</span>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">QuickBase AI</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link href="/login">
-              <Button variant="secondary" className="px-6">Sign In</Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       <main>
         <section className="container mx-auto px-4 py-24 text-center">
@@ -42,12 +24,12 @@ export default function HomePage() {
               QuickBase AI converts your websites, SaaS docs, ecommerce content, and documents into a smart support widget that answers customer questions 24/7—without writing a single FAQ.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup">
-                <Button size="lg" className="text-lg px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-xl">
+              <Link href="/signup" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full text-lg px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-xl">
                   Start 7-Day Free Trial
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-gray-50">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-10 py-4 border-2 hover:bg-gray-50">
                 Watch Demo
               </Button>
             </div>

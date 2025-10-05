@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useNotification } from '@/contexts/NotificationContext'
+import { Navbar } from '@/components/Navbar'
 
 interface Project {
   id: string
@@ -177,16 +178,7 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">QB</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useNotification } from '@/contexts/NotificationContext'
 import { HelpChatBubble } from '@/components/support/HelpChatBubble'
+import { Navbar } from '@/components/Navbar'
 
 interface Website {
   id: string
@@ -255,24 +256,7 @@ export default function WebsitePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">QB</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">QuickBase AI</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard/profile">
-              <Button variant="outline" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Profile
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar showProfile={true} />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
