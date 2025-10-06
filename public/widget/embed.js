@@ -1,6 +1,22 @@
 (function() {
   'use strict';
   
+  // Load marked library for markdown rendering
+  function loadMarked() {
+    return new Promise((resolve, reject) => {
+      if (window.marked) {
+        resolve(window.marked);
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js';
+      script.onload = () => resolve(window.marked);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  
   const CONFIG = {
     websiteId: null,
     apiUrl: (function() {
@@ -263,6 +279,77 @@
         border: 1px solid #e5e7eb;
       }
       
+      /* Markdown styling for AI messages */
+      .qb-ai-message.ai h1,
+      .qb-ai-message.ai h2,
+      .qb-ai-message.ai h3,
+      .qb-ai-message.ai h4,
+      .qb-ai-message.ai h5,
+      .qb-ai-message.ai h6 {
+        margin: 8px 0 4px 0;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      
+      .qb-ai-message.ai h1 { font-size: 1.25em; }
+      .qb-ai-message.ai h2 { font-size: 1.125em; }
+      .qb-ai-message.ai h3 { font-size: 1em; }
+      
+      .qb-ai-message.ai p {
+        margin: 4px 0;
+        line-height: 1.5;
+      }
+      
+      .qb-ai-message.ai strong {
+        font-weight: 600;
+        color: #1f2937;
+      }
+      
+      .qb-ai-message.ai em {
+        font-style: italic;
+      }
+      
+      .qb-ai-message.ai ul,
+      .qb-ai-message.ai ol {
+        margin: 8px 0;
+        padding-left: 20px;
+      }
+      
+      .qb-ai-message.ai li {
+        margin: 2px 0;
+        line-height: 1.4;
+      }
+      
+      .qb-ai-message.ai code {
+        background: #f3f4f6;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+      }
+      
+      .qb-ai-message.ai pre {
+        background: #f3f4f6;
+        padding: 8px;
+        border-radius: 4px;
+        overflow-x: auto;
+        margin: 8px 0;
+      }
+      
+      .qb-ai-message.ai pre code {
+        background: none;
+        padding: 0;
+      }
+      
+      .qb-ai-message.ai a {
+        color: #2563eb;
+        text-decoration: underline;
+      }
+      
+      .qb-ai-message.ai a:hover {
+        color: #1d4ed8;
+      }
+      
       .qb-ai-input-container {
         padding: 16px;
         display: flex;
@@ -406,7 +493,7 @@
     input.value = '';
     sendBtn.disabled = true;
 
-    addMessage(question, 'user');
+    await addMessage(question, 'user');
 
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'qb-ai-loading';
@@ -448,7 +535,13 @@
       loadingDiv.remove();
 
       if (data.answer) {
-        addMessage(data.answer, 'ai');
+        // Ensure marked library is loaded before rendering AI message
+        try {
+          await loadMarked();
+        } catch (error) {
+          console.warn('QuickBase AI: Failed to load markdown library:', error);
+        }
+        await addMessage(data.answer, 'ai');
       } else {
         throw new Error('No answer received from the server');
       }
@@ -481,11 +574,23 @@
     }
   }
 
-  function addMessage(text, type) {
+  async function addMessage(text, type) {
     const messages = document.querySelector('.qb-ai-messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `qb-ai-message ${type}`;
-    messageDiv.textContent = text;
+    
+    // Render markdown for AI messages, plain text for user messages
+    if (type === 'ai' && window.marked) {
+      try {
+        messageDiv.innerHTML = window.marked.parse(text);
+      } catch (error) {
+        console.warn('QuickBase AI: Markdown parsing failed, falling back to plain text:', error);
+        messageDiv.textContent = text;
+      }
+    } else {
+      messageDiv.textContent = text;
+    }
+    
     messages.appendChild(messageDiv);
 
     // Smooth scroll to bottom
