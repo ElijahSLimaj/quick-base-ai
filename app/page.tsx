@@ -29,7 +29,7 @@ export default function HomePage() {
                   Start 7-Day Free Trial
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-10 py-4 border-2 hover:bg-gray-50">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-10 py-4 border hover:bg-gray-50">
                 Watch Demo
               </Button>
             </div>
