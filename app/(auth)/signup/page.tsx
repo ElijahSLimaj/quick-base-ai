@@ -42,8 +42,8 @@ export default function SignupPage() {
       if (error) {
         setError(error.message)
       } else {
-        // Redirect to dashboard after successful signup
-        router.push('/dashboard')
+        // Redirect to login page with email verification message
+        router.push('/login?verify=email')
       }
     } catch {
       setError('An unexpected error occurred')
