@@ -21,8 +21,8 @@ export function PricingDialog({ open, onOpenChange, currentPlan = 'starter' }: P
     {
       id: 'starter',
       name: 'Starter',
-      monthlyPrice: 19,
-      yearlyPrice: 15,
+      monthlyPrice: 49,
+      yearlyPrice: 39,
       features: [
         '1 site',
         '2,000 answers/month',
@@ -34,10 +34,10 @@ export function PricingDialog({ open, onOpenChange, currentPlan = 'starter' }: P
     {
       id: 'pro',
       name: 'Pro',
-      monthlyPrice: 49,
-      yearlyPrice: 39,
+      monthlyPrice: 149,
+      yearlyPrice: 119,
       features: [
-        '3 sites',
+        '5 sites',
         '10,000 answers/month',
         'Custom branding',
         'Priority support'
