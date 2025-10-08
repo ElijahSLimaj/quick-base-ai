@@ -137,12 +137,12 @@ export default function HomePage() {
                 <CardHeader className="text-center pb-6">
                   <CardTitle className="text-2xl font-bold text-gray-900">Starter</CardTitle>
                   <div className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                    ${isYearly ? '39' : '49'}<span className="text-xl font-normal text-gray-500">/mo</span>
+                    ${isYearly ? '15' : '19'}<span className="text-xl font-normal text-gray-500">/mo</span>
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
                     {isYearly ? (
                       <>
-                        <span className="line-through">$49/mo</span> • Billed annually
+                        <span className="line-through">$19/mo</span> • Billed annually
                       </>
                     ) : (
                       'Billed monthly'
@@ -185,12 +185,12 @@ export default function HomePage() {
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl font-bold text-gray-900">Pro</CardTitle>
                   <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                    ${isYearly ? '119' : '149'}<span className="text-xl font-normal text-gray-500">/mo</span>
+                    ${isYearly ? '39' : '49'}<span className="text-xl font-normal text-gray-500">/mo</span>
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
                     {isYearly ? (
                       <>
-                        <span className="line-through">$149/mo</span> • Billed annually
+                        <span className="line-through">$49/mo</span> • Billed annually
                       </>
                     ) : (
                       'Billed monthly'
@@ -201,7 +201,7 @@ export default function HomePage() {
                   <ul className="space-y-4 text-left mb-8">
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">5 sites</span>
+                      <span className="text-gray-700">3 sites</span>
                     </li>
                     <li className="flex items-center">
                       <CheckCircle className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />

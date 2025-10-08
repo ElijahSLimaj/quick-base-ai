@@ -13,7 +13,7 @@ export const PLANS = {
   },
   starter: {
     name: 'Starter',
-    price: { monthly: 4900, yearly: 47040 }, // $49/month, $470.40/year (20% off)
+    price: { monthly: 1900, yearly: 15200 }, // $19/month, $152/year (20% off)
     interval: 'month' as const,
     features: {
       sites: 1,
@@ -24,10 +24,10 @@ export const PLANS = {
   },
   pro: {
     name: 'Pro',
-    price: { monthly: 14900, yearly: 143040 }, // $149/month, $1430.40/year (20% off)
+    price: { monthly: 4900, yearly: 39200 }, // $49/month, $392/year (20% off)
     interval: 'month' as const,
     features: {
-      sites: 5,
+      sites: 3,
       queries: 10000,
       analytics: 'advanced' as const,
       support: 'priority' as const
@@ -62,7 +62,7 @@ export const PLAN_LIMITS = {
     analyticsLevel: 'basic' as const
   },
   pro: {
-    maxSites: 5,
+    maxSites: 3,
     maxQueriesPerMonth: 10000,
     analyticsLevel: 'advanced' as const
   },
