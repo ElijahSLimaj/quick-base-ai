@@ -7,8 +7,8 @@ export type BillingPeriod = 'monthly' | 'yearly'
  * Uses the correct environment variable names
  */
 export function getPriceId(plan: PlanKey, billingPeriod: BillingPeriod = 'monthly'): string | null {
-  // Trial and enterprise don't use Stripe price IDs
-  if (plan === 'trial' || plan === 'expired_trial' || plan === 'enterprise') {
+  // Trial doesn't use Stripe price IDs
+  if (plan === 'trial' || plan === 'expired_trial') {
     return null
   }
 
@@ -20,6 +20,10 @@ export function getPriceId(plan: PlanKey, billingPeriod: BillingPeriod = 'monthl
     pro: {
       monthly: process.env.STRIPE_PRO_PRICE_ID,
       yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID
+    },
+    enterprise: {
+      monthly: process.env.STRIPE_ENTERPRISE_PRICE_ID,
+      yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID
     }
   } as const
 
@@ -35,7 +39,9 @@ export function getPlanFromPriceId(priceId?: string): { plan: PlanKey; billingPe
     [process.env.STRIPE_STARTER_PRICE_ID!]: { plan: 'starter', billingPeriod: 'monthly' },
     [process.env.STRIPE_STARTER_YEARLY_PRICE_ID!]: { plan: 'starter', billingPeriod: 'yearly' },
     [process.env.STRIPE_PRO_PRICE_ID!]: { plan: 'pro', billingPeriod: 'monthly' },
-    [process.env.STRIPE_PRO_YEARLY_PRICE_ID!]: { plan: 'pro', billingPeriod: 'yearly' }
+    [process.env.STRIPE_PRO_YEARLY_PRICE_ID!]: { plan: 'pro', billingPeriod: 'yearly' },
+    [process.env.STRIPE_ENTERPRISE_PRICE_ID!]: { plan: 'enterprise', billingPeriod: 'monthly' },
+    [process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID!]: { plan: 'enterprise', billingPeriod: 'yearly' }
   }
 
   return priceToPlan[priceId || ''] || null
@@ -57,13 +63,45 @@ export function getAllPriceIdsForPlan(plan: PlanKey): { monthly: string | null; 
 export function validatePriceIds(): { valid: boolean; missing: string[] } {
   const required = [
     'STRIPE_STARTER_PRICE_ID',
-    'STRIPE_STARTER_YEARLY_PRICE_ID', 
+    'STRIPE_STARTER_YEARLY_PRICE_ID',
     'STRIPE_PRO_PRICE_ID',
-    'STRIPE_PRO_YEARLY_PRICE_ID'
+    'STRIPE_PRO_YEARLY_PRICE_ID',
+    'STRIPE_ENTERPRISE_PRICE_ID',
+    'STRIPE_ENTERPRISE_YEARLY_PRICE_ID'
   ]
 
   const missing = required.filter(envVar => !process.env[envVar])
-  
+
+  return {
+    valid: missing.length === 0,
+    missing
+  }
+}
+
+/**
+ * Get the additional seat price ID for enterprise plans
+ * This is used for billing extra seats beyond the base 5
+ */
+export function getAdditionalSeatPriceId(billingPeriod: BillingPeriod = 'monthly'): string | null {
+  const seatPriceIds = {
+    monthly: process.env.STRIPE_ENTERPRISE_SEAT_PRICE_ID,
+    yearly: process.env.STRIPE_ENTERPRISE_SEAT_YEARLY_PRICE_ID
+  }
+
+  return seatPriceIds[billingPeriod] || null
+}
+
+/**
+ * Check if enterprise seat pricing is configured
+ */
+export function validateSeatPricing(): { valid: boolean; missing: string[] } {
+  const required = [
+    'STRIPE_ENTERPRISE_SEAT_PRICE_ID',
+    'STRIPE_ENTERPRISE_SEAT_YEARLY_PRICE_ID'
+  ]
+
+  const missing = required.filter(envVar => !process.env[envVar])
+
   return {
     valid: missing.length === 0,
     missing

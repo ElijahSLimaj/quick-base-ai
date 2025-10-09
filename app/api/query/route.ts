@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { generateRAGResponse } from '@/lib/ai/rag-engine'
 import { checkProjectLimits, incrementQueryUsage } from '@/lib/billing/usage'
+import { hasTicketingFeature, canEscalateToHuman, getTicketingUpgradeMessage } from '@/lib/billing/plans'
 
 export async function POST(request: NextRequest) {
   // Handle CORS preflight
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     console.log('Querying website from database...', { websiteId })
     const { data: website, error: websiteError } = await supabase
       .from('websites')
-      .select('*')
+      .select('*, organization_id, plan_name')
       .eq('id', websiteId)
       .single()
 
@@ -89,6 +90,22 @@ export async function POST(request: NextRequest) {
       answer: ragResponse.answer.substring(0, 200) + '...'
     })
 
+    // Check if website plan supports ticketing and determine escalation options
+    const websitePlan = website.plan_name || 'trial'
+    const supportsTicketing = hasTicketingFeature(websitePlan)
+    const canEscalate = canEscalateToHuman(websitePlan)
+    const confidenceThreshold = 0.7
+    const lowConfidence = ragResponse.confidence < confidenceThreshold
+
+    console.log('Escalation analysis:', {
+      websitePlan,
+      supportsTicketing,
+      canEscalate,
+      confidence: ragResponse.confidence,
+      lowConfidence,
+      threshold: confidenceThreshold
+    })
+
     const { error: queryError } = await supabase
       .from('queries')
       .insert({
@@ -106,11 +123,34 @@ export async function POST(request: NextRequest) {
     // Increment usage count after successful query
     await incrementQueryUsage(websiteId)
 
-    const response = NextResponse.json({
+    // Prepare response with escalation options
+    const responseData: any = {
       answer: ragResponse.answer,
       confidence: ragResponse.confidence,
-      sources: ragResponse.sources
-    })
+      sources: ragResponse.sources,
+      // Escalation flags
+      canEscalateToHuman: canEscalate,
+      lowConfidence: lowConfidence,
+      escalationAvailable: canEscalate && lowConfidence
+    }
+
+    // Add upgrade message for non-enterprise plans when confidence is low
+    if (!canEscalate && lowConfidence) {
+      responseData.upgradeForTicketing = getTicketingUpgradeMessage(websitePlan)
+    }
+
+    // Add escalation context for ticket creation
+    if (canEscalate) {
+      responseData.escalationContext = {
+        originalQuery: question,
+        aiResponse: ragResponse.answer,
+        aiConfidence: ragResponse.confidence,
+        websiteId: websiteId,
+        escalationReason: lowConfidence ? 'low_confidence' : 'user_request'
+      }
+    }
+
+    const response = NextResponse.json(responseData)
 
     // Add CORS headers
     response.headers.set('Access-Control-Allow-Origin', origin || '*')

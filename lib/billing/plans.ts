@@ -35,13 +35,16 @@ export const PLANS = {
   },
   enterprise: {
     name: 'Enterprise',
-    price: null, // Custom pricing
+    price: { monthly: 9900, yearly: 95040 }, // $99/month, $950.40/year (20% off)
     interval: 'month' as const,
     features: {
       sites: -1, // unlimited
       queries: -1, // unlimited
       analytics: 'enterprise' as const,
-      support: 'dedicated' as const
+      support: 'dedicated' as const,
+      ticketing: true, // Human escalation enabled
+      seats: 5, // Base 5 seats included
+      additionalSeatPrice: 499 // $4.99 per additional seat
     }
   }
 } as const
@@ -69,7 +72,10 @@ export const PLAN_LIMITS = {
   enterprise: {
     maxSites: -1, // unlimited
     maxQueriesPerMonth: -1, // unlimited
-    analyticsLevel: 'enterprise' as const
+    analyticsLevel: 'enterprise' as const,
+    hasTicketing: true,
+    baseSeats: 5,
+    maxSeats: 100 // Reasonable upper limit
   }
 } as const
 
@@ -96,7 +102,7 @@ export function isWithinLimits(plan: string, currentUsage: { sites: number; quer
 
 export function getUpgradeMessage(plan: string, currentUsage: { sites: number; queries: number }) {
   const limits = getPlanLimits(plan)
-  
+
   if (limits.maxSites !== -1 && currentUsage.sites > limits.maxSites) {
     return {
       title: 'Site Limit Reached',
@@ -104,14 +110,62 @@ export function getUpgradeMessage(plan: string, currentUsage: { sites: number; q
       action: 'upgrade_sites'
     }
   }
-  
+
   if (limits.maxQueriesPerMonth !== -1 && currentUsage.queries > limits.maxQueriesPerMonth) {
     return {
-      title: 'Query Limit Reached', 
+      title: 'Query Limit Reached',
       message: `You've used ${currentUsage.queries} queries this month, but your plan allows ${limits.maxQueriesPerMonth}. Upgrade for more queries.`,
       action: 'upgrade_queries'
     }
   }
-  
+
   return null
+}
+
+// Ticketing feature functions
+export function hasTicketingFeature(plan: string): boolean {
+  const limits = getPlanLimits(plan)
+  return 'hasTicketing' in limits && limits.hasTicketing === true
+}
+
+export function canEscalateToHuman(plan: string): boolean {
+  return hasTicketingFeature(plan)
+}
+
+export function getSeatLimits(plan: string) {
+  const limits = getPlanLimits(plan)
+
+  if (plan === 'enterprise') {
+    return {
+      baseSeats: limits.baseSeats || 5,
+      maxSeats: limits.maxSeats || 100,
+      additionalSeatPrice: PLANS.enterprise.features.additionalSeatPrice || 499
+    }
+  }
+
+  return {
+    baseSeats: 1,
+    maxSeats: 1,
+    additionalSeatPrice: 0
+  }
+}
+
+export function calculateSeatCost(plan: string, totalSeats: number): number {
+  if (plan !== 'enterprise') return 0
+
+  const seatLimits = getSeatLimits(plan)
+  const additionalSeats = Math.max(0, totalSeats - seatLimits.baseSeats)
+
+  return additionalSeats * seatLimits.additionalSeatPrice
+}
+
+export function getTicketingUpgradeMessage(plan: string) {
+  if (hasTicketingFeature(plan)) return null
+
+  return {
+    title: 'Upgrade for Human Support',
+    message: 'Get instant access to human experts when AI can\'t help. Upgrade to Enterprise for $99/month.',
+    action: 'upgrade_for_ticketing',
+    targetPlan: 'enterprise'
+  }
 }
