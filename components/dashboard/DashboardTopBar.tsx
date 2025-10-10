@@ -13,6 +13,7 @@ import {
 import { Menu, Bell, User, LogOut, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { NotificationDropdown } from './NotificationDropdown'
 
 interface DashboardTopBarProps {
   userEmail?: string
@@ -54,10 +55,7 @@ export function DashboardTopBar({ userEmail, onMobileMenuToggle }: DashboardTopB
         {/* Right section - Actions */}
         <div className="flex items-center space-x-2 ml-auto">
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative p-2">
-            <Bell className="h-5 w-5 text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </Button>
+          <NotificationDropdown />
 
           {/* User Menu */}
           <DropdownMenu>
@@ -75,7 +73,7 @@ export function DashboardTopBar({ userEmail, onMobileMenuToggle }: DashboardTopB
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 bg-white border-0 shadow-lg">
               <div className="px-2 py-1.5">
                 <p className="text-sm font-medium">My Account</p>
                 {userEmail && (

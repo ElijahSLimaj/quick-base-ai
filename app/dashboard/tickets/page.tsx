@@ -62,21 +62,25 @@ export default function TicketsPage() {
   useEffect(() => {
     const initPage = async () => {
       await checkUser()
-      setLoading(false)
+      // Don't set loading to false yet - wait for organization data
     }
     initPage()
   }, [checkUser])
 
   useEffect(() => {
-    if (user) {
-      fetchOrganization()
+    const loadOrganization = async () => {
+      if (user) {
+        await fetchOrganization()
+        setLoading(false) // Only set loading to false after organization is fetched
+      }
     }
+    loadOrganization()
   }, [user, fetchOrganization])
 
   // Check if user has access to ticketing
   const hasTicketingAccess = organization?.plan_name === 'enterprise'
 
-  if (loading) {
+  if (loading || !organization) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -89,25 +93,56 @@ export default function TicketsPage() {
 
   if (!hasTicketingAccess) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <Card className="border border-orange-200 bg-orange-50">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🎫</span>
-            </div>
-            <h2 className="text-2xl font-bold text-orange-900 mb-2">Enterprise Feature</h2>
-            <p className="text-orange-800 mb-6">
-              Support ticketing is available on Enterprise plans only. Upgrade to access advanced ticket management,
-              team collaboration, and human escalation features.
+      <div className="max-w-2xl mx-auto mt-12">
+        <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
+          </div>
+
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">Support Ticketing</h2>
+            <p className="text-gray-600 leading-relaxed">
+              Unlock professional support ticketing with advanced features designed for growing teams and enterprise customers.
             </p>
-            <div className="space-y-2 text-sm text-orange-700">
-              <p>• AI-powered ticket routing and escalation</p>
-              <p>• Team assignment and internal notes</p>
-              <p>• SLA tracking and analytics</p>
-              <p>• Priority support and faster response times</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-8 text-left">
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="font-medium text-gray-900 text-sm">AI-Powered Routing</p>
+                <p className="text-gray-600 text-xs">Smart ticket assignment</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="font-medium text-gray-900 text-sm">Team Collaboration</p>
+                <p className="text-gray-600 text-xs">Internal notes & assignments</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="font-medium text-gray-900 text-sm">SLA Tracking</p>
+                <p className="text-gray-600 text-xs">Response time analytics</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="font-medium text-gray-900 text-sm">Priority Support</p>
+                <p className="text-gray-600 text-xs">Faster response times</p>
+              </div>
+            </div>
+          </div>
+
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors">
+            Upgrade to Enterprise
+          </button>
+        </div>
       </div>
     )
   }

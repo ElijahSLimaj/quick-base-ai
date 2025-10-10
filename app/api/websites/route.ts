@@ -3,24 +3,48 @@ import { createClient } from '@/lib/supabase/server'
 import { withPlanGuard } from '@/lib/middleware/plan-guard'
 import { subscriptionService } from '@/lib/billing/subscription'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: websites, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const organizationId = searchParams.get('organization_id')
+
+    let query = supabase
       .from('websites')
       .select(`
         *,
         content(count),
         queries(count)
       `)
-      .eq('owner_id', user.id)
       .order('created_at', { ascending: false })
+
+    if (organizationId) {
+      // Filter by organization and verify user has access
+      const { data: membership } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .eq('status', 'active')
+        .single()
+
+      if (!membership) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      }
+
+      query = query.eq('organization_id', organizationId)
+    } else {
+      // Default: filter by owner (backwards compatibility)
+      query = query.eq('owner_id', user.id)
+    }
+
+    const { data: websites, error } = await query
 
     if (error) {
       console.error('Error fetching websites:', error)

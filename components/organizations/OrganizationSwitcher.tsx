@@ -148,9 +148,9 @@ export function OrganizationSwitcher({
       <div className="flex items-center space-x-3">
         {currentOrganization && (
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => setShowSwitchDialog(true)}
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 hover:bg-gray-100"
           >
             <Building2 className="w-4 h-4" />
             <span>{currentOrganization.name}</span>

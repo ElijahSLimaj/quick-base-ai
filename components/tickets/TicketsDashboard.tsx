@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Plus, Filter, Clock, AlertCircle, CheckCircle, MessageSquare, User, Calendar, Download, Circle, Zap, Timer, TrendingUp } from 'lucide-react'
 import { useNotification } from '@/contexts/NotificationContext'
+import { CreateTicketDialog } from './CreateTicketDialog'
 
 interface Ticket {
   id: string
@@ -219,10 +220,13 @@ export function TicketsDashboard({ organization, onTicketClick }: TicketsDashboa
             </div>
           </div>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          New Ticket
-        </Button>
+        <CreateTicketDialog
+          organizationId={organization.id}
+          onTicketCreated={() => {
+            fetchTickets()
+            fetchStats()
+          }}
+        />
       </div>
 
       {/* Compact Stats */}
@@ -309,27 +313,27 @@ export function TicketsDashboard({ organization, onTicketClick }: TicketsDashboa
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 bg-white border-gray-200 hover:bg-gray-50">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
+                <SelectContent className="bg-white border-0 shadow-lg rounded-lg z-50">
+                  <SelectItem value="all" className="bg-white hover:bg-gray-50">All Status</SelectItem>
+                  <SelectItem value="open" className="bg-white hover:bg-gray-50">Open</SelectItem>
+                  <SelectItem value="in_progress" className="bg-white hover:bg-gray-50">In Progress</SelectItem>
+                  <SelectItem value="resolved" className="bg-white hover:bg-gray-50">Resolved</SelectItem>
+                  <SelectItem value="closed" className="bg-white hover:bg-gray-50">Closed</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 bg-white border-gray-200 hover:bg-gray-50">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priority</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
+                <SelectContent className="bg-white border-0 shadow-lg rounded-lg z-50">
+                  <SelectItem value="all" className="bg-white hover:bg-gray-50">All Priority</SelectItem>
+                  <SelectItem value="low" className="bg-white hover:bg-gray-50">Low</SelectItem>
+                  <SelectItem value="medium" className="bg-white hover:bg-gray-50">Medium</SelectItem>
+                  <SelectItem value="high" className="bg-white hover:bg-gray-50">High</SelectItem>
+                  <SelectItem value="urgent" className="bg-white hover:bg-gray-50">Urgent</SelectItem>
                 </SelectContent>
               </Select>
             </div>

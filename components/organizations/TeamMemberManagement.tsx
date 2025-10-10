@@ -331,7 +331,7 @@ export function TeamMemberManagement({
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="bg-white">
                           <DropdownMenuItem
                             onClick={() => handleRemoveMember(member.id)}
                             className="text-red-600 hover:text-red-700"

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { NotificationDropdown } from './NotificationDropdown'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,6 +140,9 @@ export function EnterpriseNavigation({ userOrganization, unreadTickets = 0 }: En
 
           {/* Quick Actions */}
           <div className="flex items-center space-x-2">
+            {/* Notifications */}
+            <NotificationDropdown />
+            
             {userOrganization?.plan_name === 'enterprise' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -148,7 +152,7 @@ export function EnterpriseNavigation({ userOrganization, unreadTickets = 0 }: En
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-white">
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/tickets/new" className="flex items-center">
                       <Ticket className="h-4 w-4 mr-2" />

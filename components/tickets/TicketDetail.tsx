@@ -232,33 +232,38 @@ export function TicketDetail({ ticketId, userRole, onTicketUpdated }: TicketDeta
   }
 
   const getStatusBadge = (status: string) => {
-    const colors = {
-      open: 'bg-blue-100 text-blue-800 border-blue-200',
-      in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      resolved: 'bg-green-100 text-green-800 border-green-200',
-      closed: 'bg-gray-100 text-gray-800 border-gray-200'
+    const config = {
+      open: { color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
+      in_progress: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+      resolved: { color: 'bg-green-50 text-green-700 border-green-200', dot: 'bg-green-400' },
+      closed: { color: 'bg-gray-50 text-gray-700 border-gray-200', dot: 'bg-gray-400' }
     }
 
+    const statusConfig = config[status as keyof typeof config] || config.open
+
     return (
-      <Badge variant="secondary" className={colors[status as keyof typeof colors]}>
-        {getStatusIcon(status)}
-        <span className="ml-1 capitalize">{status.replace('_', ' ')}</span>
-      </Badge>
+      <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${statusConfig.color}`}>
+        <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusConfig.dot}`}></div>
+        <span className="capitalize">{status.replace('_', ' ')}</span>
+      </div>
     )
   }
 
   const getPriorityBadge = (priority: string) => {
-    const colors = {
-      low: 'bg-gray-100 text-gray-700',
-      medium: 'bg-blue-100 text-blue-700',
-      high: 'bg-orange-100 text-orange-700',
-      urgent: 'bg-red-100 text-red-700'
+    const config = {
+      low: { color: 'text-gray-600', icon: '⚪' },
+      medium: { color: 'text-blue-600', icon: '🟡' },
+      high: { color: 'text-orange-600', icon: '🟠' },
+      urgent: { color: 'text-red-600', icon: '🔴' }
     }
 
+    const priorityConfig = config[priority as keyof typeof config] || config.medium
+
     return (
-      <Badge variant="outline" className={colors[priority as keyof typeof colors]}>
-        {priority}
-      </Badge>
+      <div className={`inline-flex items-center text-xs font-medium ${priorityConfig.color}`}>
+        <span className="mr-1 text-[10px]">{priorityConfig.icon}</span>
+        <span className="capitalize">{priority}</span>
+      </div>
     )
   }
 
@@ -303,190 +308,195 @@ export function TicketDetail({ ticketId, userRole, onTicketUpdated }: TicketDeta
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Ticket Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <h1 className="text-2xl font-bold">#{ticket.ticket_number}</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <span className="text-sm font-mono text-gray-500">#{ticket.ticket_number}</span>
+              <div className="flex items-center space-x-2">
                 {getStatusBadge(ticket.status)}
                 {getPriorityBadge(ticket.priority)}
               </div>
-              <h2 className="text-xl text-gray-900">{ticket.title}</h2>
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Created {formatDate(ticket.created_at)}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <User className="w-4 h-4" />
-                  <span>{ticket.customer_name || 'Anonymous'}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Mail className="w-4 h-4" />
-                  <span>{ticket.customer_email}</span>
-                </div>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900">{ticket.title}</h1>
+            <div className="flex items-center space-x-6 text-sm text-gray-600">
+              <div className="flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>{ticket.customer_name || 'Anonymous'}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Mail className="w-4 h-4" />
+                <span>{ticket.customer_email}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(ticket.created_at)}</span>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInternalMessages(!showInternalMessages)}
-              >
-                {showInternalMessages ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    Hide Internal
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Show Internal
-                  </>
-                )}
-              </Button>
-              <Select value={ticket.status} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-        </CardHeader>
-      </Card>
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInternalMessages(!showInternalMessages)}
+            >
+              {showInternalMessages ? (
+                <>
+                  <EyeOff className="w-4 h-4 mr-2" />
+                  Hide Internal
+                </>
+              ) : (
+                <>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Show Internal
+                </>
+              )}
+            </Button>
+            <Select value={ticket.status} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-40 bg-white border-gray-200 hover:bg-gray-50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-0 shadow-lg rounded-lg z-50">
+                <SelectItem value="open" className="bg-white hover:bg-gray-50">Open</SelectItem>
+                <SelectItem value="in_progress" className="bg-white hover:bg-gray-50">In Progress</SelectItem>
+                <SelectItem value="resolved" className="bg-white hover:bg-gray-50">Resolved</SelectItem>
+                <SelectItem value="closed" className="bg-white hover:bg-gray-50">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* AI Context */}
       {ticket.original_query && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-lg text-blue-900">AI Escalation Context</CardTitle>
-            <CardDescription className="text-blue-700">
-              This ticket was escalated from an AI conversation
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <div className="flex items-center space-x-2 mb-3">
+            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-xs font-medium text-blue-700">AI</span>
+            </div>
+            <h3 className="text-sm font-medium text-blue-900">AI Escalation Context</h3>
+          </div>
+          <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium text-blue-900">Original Question</Label>
-              <p className="text-sm text-blue-800 mt-1">{ticket.original_query}</p>
+              <p className="text-xs font-medium text-blue-700 mb-1">Original Question</p>
+              <p className="text-sm text-blue-800">{ticket.original_query}</p>
             </div>
             {ticket.ai_response && (
               <div>
-                <Label className="text-sm font-medium text-blue-900">AI Response</Label>
-                <p className="text-sm text-blue-800 mt-1">{ticket.ai_response}</p>
+                <p className="text-xs font-medium text-blue-700 mb-1">AI Response</p>
+                <p className="text-sm text-blue-800">{ticket.ai_response}</p>
               </div>
             )}
             {ticket.ai_confidence !== undefined && (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-6 text-xs">
                 <div>
-                  <Label className="text-sm font-medium text-blue-900">AI Confidence</Label>
-                  <p className="text-sm text-blue-800">{(ticket.ai_confidence * 100).toFixed(1)}%</p>
+                  <span className="font-medium text-blue-700">Confidence: </span>
+                  <span className="text-blue-800">{(ticket.ai_confidence * 100).toFixed(1)}%</span>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-blue-900">Escalation Reason</Label>
-                  <p className="text-sm text-blue-800 capitalize">{ticket.escalation_reason?.replace('_', ' ')}</p>
-                </div>
+                {ticket.escalation_reason && (
+                  <div>
+                    <span className="font-medium text-blue-700">Reason: </span>
+                    <span className="text-blue-800 capitalize">{ticket.escalation_reason.replace('_', ' ')}</span>
+                  </div>
+                )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      {/* Messages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Conversation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {/* Initial Description */}
-            <div className="flex space-x-3 pb-4 border-b">
-              <Avatar>
-                <AvatarFallback>
-                  <User className="w-4 h-4" />
-                </AvatarFallback>
-              </Avatar>
+      {/* Conversation */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-900">Conversation</h3>
+        </div>
+
+        {/* Messages */}
+        <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+          {/* Initial Description */}
+          <div className="flex space-x-3 pb-4 border-b border-gray-100">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-sm font-medium text-gray-900">{ticket.customer_name || 'Customer'}</span>
+                <span className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">Initial Request</span>
+                <span className="text-xs text-gray-500">{formatDate(ticket.created_at)}</span>
+              </div>
+              <p className="text-sm text-gray-700">{ticket.description}</p>
+            </div>
+          </div>
+
+          {/* Messages */}
+          {filteredMessages.map((message) => (
+            <div key={message.id} className="flex space-x-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                message.author_type === 'customer'
+                  ? 'bg-blue-100'
+                  : message.is_internal
+                    ? 'bg-yellow-100'
+                    : 'bg-green-100'
+              }`}>
+                <User className={`w-4 h-4 ${
+                  message.author_type === 'customer'
+                    ? 'text-blue-600'
+                    : message.is_internal
+                      ? 'text-yellow-600'
+                      : 'text-green-600'
+                }`} />
+              </div>
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className="font-medium">{ticket.customer_name || 'Customer'}</span>
-                  <Badge variant="outline" className="text-xs">Initial Request</Badge>
-                  <span className="text-xs text-gray-500">{formatDate(ticket.created_at)}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {message.author_type === 'customer'
+                      ? (message.customer_name || 'Customer')
+                      : (message.users?.email.split('@')[0] || 'Team Member')
+                    }
+                  </span>
+                  {message.is_internal && (
+                    <span className="text-xs px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full font-medium">
+                      Internal
+                    </span>
+                  )}
+                  {message.is_first_response && (
+                    <span className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded-full font-medium">
+                      First Response
+                    </span>
+                  )}
+                  <span className="text-xs text-gray-500">{formatDate(message.created_at)}</span>
                 </div>
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-gray-700">{ticket.description}</p>
+                <div className={`p-3 rounded-lg ${
+                  message.is_internal
+                    ? 'bg-yellow-50 border-l-4 border-l-yellow-300'
+                    : 'bg-gray-50'
+                }`}>
+                  <p className="text-sm text-gray-700">{message.message}</p>
                 </div>
               </div>
             </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
 
-            {/* Messages */}
-            {filteredMessages.map((message) => (
-              <div key={message.id} className="flex space-x-3">
-                <Avatar>
-                  <AvatarFallback>
-                    {message.author_type === 'customer' ? (
-                      <User className="w-4 h-4" />
-                    ) : (
-                      <User className="w-4 h-4" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-medium">
-                      {message.author_type === 'customer'
-                        ? (message.customer_name || 'Customer')
-                        : (message.users?.email.split('@')[0] || 'Team Member')
-                      }
-                    </span>
-                    {message.is_internal && (
-                      <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                        Internal
-                      </Badge>
-                    )}
-                    {message.is_first_response && (
-                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                        First Response
-                      </Badge>
-                    )}
-                    <span className="text-xs text-gray-500">{formatDate(message.created_at)}</span>
-                  </div>
-                  <div className={`prose prose-sm max-w-none ${
-                    message.is_internal ? 'bg-yellow-50 border-l-4 border-l-yellow-200 pl-4 py-2' : ''
-                  }`}>
-                    <p className="text-gray-700">{message.message}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <Separator className="my-6" />
-
-          {/* Message Input */}
+        {/* Message Input */}
+        <div className="border-t border-gray-100 p-6">
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="internal-toggle" className="text-sm">
-                Internal Note
-              </Label>
-              <input
-                id="internal-toggle"
-                type="checkbox"
-                checked={isInternal}
-                onChange={(e) => setIsInternal(e.target.checked)}
-                className="rounded"
-              />
+            <div className="flex items-center space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isInternal}
+                  onChange={(e) => setIsInternal(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Internal Note</span>
+              </label>
               {isInternal && (
-                <span className="text-xs text-yellow-600">
-                  This message will only be visible to team members
+                <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
+                  Only visible to team members
                 </span>
               )}
             </div>
@@ -495,6 +505,7 @@ export function TicketDetail({ ticketId, userRole, onTicketUpdated }: TicketDeta
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               rows={3}
+              className="resize-none"
             />
             <div className="flex items-center justify-between">
               <Button variant="outline" size="sm">
@@ -519,44 +530,47 @@ export function TicketDetail({ ticketId, userRole, onTicketUpdated }: TicketDeta
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Attachments */}
       {attachments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Attachments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {attachments.map((attachment) => (
-                <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="font-medium">{attachment.original_filename}</p>
-                      <p className="text-sm text-gray-500">
-                        {formatFileSize(attachment.file_size)} • {formatDate(attachment.created_at)}
-                      </p>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Attachments</h3>
+          <div className="space-y-3">
+            {attachments.map((attachment) => (
+              <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <FileText className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="font-medium text-gray-900">{attachment.original_filename}</p>
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <span>{formatFileSize(attachment.file_size)}</span>
+                      <span>•</span>
+                      <span>{formatDate(attachment.created_at)}</span>
+                      {attachment.is_internal && (
+                        <>
+                          <span>•</span>
+                          <span className="text-xs px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full font-medium">
+                            Internal
+                          </span>
+                        </>
+                      )}
                     </div>
-                    {attachment.is_internal && (
-                      <Badge variant="secondary" className="text-xs">Internal</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
