@@ -92,12 +92,16 @@ export async function POST(request: NextRequest) {
       else priority = 'low'
     }
 
+    // Generate unique ticket number
+    const ticketNumber = `T-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
+
     // Create ticket
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
         website_id: websiteId,
         organization_id: website.organization_id,
+        ticket_number: ticketNumber,
         title: ticketTitle,
         description: ticketDescription,
         priority,
@@ -140,31 +144,38 @@ export async function POST(request: NextRequest) {
       // Get team members with ticket management permissions
       const { data: teamMembers } = await supabase
         .from('team_members')
-        .select('users(email)')
-        .eq('organization_id', website.organization_id)
+        .select('user_id, role')
+        .eq('organization_id', website.organization_id!)
         .eq('status', 'active')
         .in('role', ['owner', 'admin'])
 
       if (teamMembers && teamMembers.length > 0) {
-        const teamEmails = teamMembers
-          .map(member => member.users?.email)
-          .filter(Boolean) as string[]
+        // Get user emails from auth schema
+        const userIds = teamMembers.map(member => member.user_id)
+        const { data: users } = await supabase.auth.admin.listUsers()
 
-        if (teamEmails.length > 0) {
-          await emailService.sendNewTicketNotification({
-            ticketNumber: ticket.ticket_number,
-            title: ticket.title,
-            description: ticketDescription,
-            customerName: customerName,
-            customerEmail: customerEmail,
-            organizationName: website.name,
-            status: ticket.status,
-            priority: ticket.priority,
-            createdAt: ticket.created_at,
-            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticket.id}`
-          }, teamEmails)
+        if (users?.users) {
+          const teamEmails = users.users
+            .filter(user => userIds.includes(user.id))
+            .map(user => user.email)
+            .filter(Boolean) as string[]
 
-          console.log('Escalation API: Notification email sent to team', { teamEmails: teamEmails.length })
+          if (teamEmails.length > 0) {
+            await emailService.sendNewTicketNotification({
+              ticketNumber: ticket.ticket_number,
+              title: ticket.title,
+              description: ticketDescription,
+              customerName: customerName,
+              customerEmail: customerEmail,
+              organizationName: website.name,
+              status: ticket.status,
+              priority: ticket.priority,
+              createdAt: ticket.created_at || new Date().toISOString(),
+              ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticket.id}`
+            }, teamEmails)
+
+            console.log('Escalation API: Notification email sent to team', { teamEmails: teamEmails.length })
+          }
         }
       }
     } catch (emailError) {

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Plus, Filter, Clock, AlertCircle, CheckCircle, MessageSquare, User, Calendar } from 'lucide-react'
+import { Search, Plus, Filter, Clock, AlertCircle, CheckCircle, MessageSquare, User, Calendar, Download, Circle, Zap, Timer, TrendingUp } from 'lucide-react'
 import { useNotification } from '@/contexts/NotificationContext'
 
 interface Ticket {
@@ -56,9 +56,10 @@ interface Organization {
 
 interface TicketsDashboardProps {
   organization: Organization
+  onTicketClick?: (ticketId: string) => void
 }
 
-export function TicketsDashboard({ organization }: TicketsDashboardProps) {
+export function TicketsDashboard({ organization, onTicketClick }: TicketsDashboardProps) {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [stats, setStats] = useState<TicketStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -141,33 +142,38 @@ export function TicketsDashboard({ organization }: TicketsDashboardProps) {
   }
 
   const getStatusBadge = (status: string) => {
-    const colors = {
-      open: 'bg-blue-100 text-blue-800 border-blue-200',
-      in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      resolved: 'bg-green-100 text-green-800 border-green-200',
-      closed: 'bg-gray-100 text-gray-800 border-gray-200'
+    const config = {
+      open: { color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-400' },
+      in_progress: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+      resolved: { color: 'bg-green-50 text-green-700 border-green-200', dot: 'bg-green-400' },
+      closed: { color: 'bg-gray-50 text-gray-700 border-gray-200', dot: 'bg-gray-400' }
     }
 
+    const statusConfig = config[status as keyof typeof config] || config.open
+
     return (
-      <Badge variant="secondary" className={colors[status as keyof typeof colors]}>
-        {getStatusIcon(status)}
-        <span className="ml-1 capitalize">{status.replace('_', ' ')}</span>
-      </Badge>
+      <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${statusConfig.color}`}>
+        <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusConfig.dot}`}></div>
+        <span className="capitalize">{status.replace('_', ' ')}</span>
+      </div>
     )
   }
 
   const getPriorityBadge = (priority: string) => {
-    const colors = {
-      low: 'bg-gray-100 text-gray-700',
-      medium: 'bg-blue-100 text-blue-700',
-      high: 'bg-orange-100 text-orange-700',
-      urgent: 'bg-red-100 text-red-700'
+    const config = {
+      low: { color: 'text-gray-600', icon: '⚪' },
+      medium: { color: 'text-blue-600', icon: '🟡' },
+      high: { color: 'text-orange-600', icon: '🟠' },
+      urgent: { color: 'text-red-600', icon: '🔴' }
     }
 
+    const priorityConfig = config[priority as keyof typeof config] || config.medium
+
     return (
-      <Badge variant="outline" className={colors[priority as keyof typeof colors]}>
-        {priority}
-      </Badge>
+      <div className={`inline-flex items-center text-xs font-medium ${priorityConfig.color}`}>
+        <span className="mr-1 text-[10px]">{priorityConfig.icon}</span>
+        <span className="capitalize">{priority}</span>
+      </div>
     )
   }
 
@@ -197,216 +203,224 @@ export function TicketsDashboard({ organization }: TicketsDashboardProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Modern Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Support Tickets</h1>
-          <p className="text-gray-600">Manage customer support requests for {organization.name}</p>
+        <div className="flex items-center space-x-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Support Tickets</h1>
+            <div className="flex items-center space-x-2 mt-1">
+              <span className="text-sm text-gray-500">{organization.name}</span>
+              {stats && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-sm font-medium text-gray-700">{stats.total} total</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
-        <Button>
+        <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
-          Create Ticket
+          New Ticket
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Compact Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-md">
-                  <MessageSquare className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Tickets</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Active</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.open + stats.in_progress}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Circle className="w-4 h-4 text-amber-600" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-md">
-                  <Clock className="w-6 h-6 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <p className="text-2xl font-bold">{stats.open + stats.in_progress}</p>
-                </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Resolved</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.resolved}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-md">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Resolved</p>
-                  <p className="text-2xl font-bold">{stats.resolved}</p>
-                </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Avg Response</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.avg_response_time}h</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Timer className="w-4 h-4 text-blue-600" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-md">
-                  <User className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Avg Response</p>
-                  <p className="text-2xl font-bold">{stats.avg_response_time}h</p>
-                </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Resolution</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.avg_resolution_time}h</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <TrendingUp className="w-4 h-4 text-purple-600" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search tickets..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Modern Filters and Tabs */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="bg-gray-50">
+                <TabsTrigger value="all" className="text-sm">All</TabsTrigger>
+                <TabsTrigger value="unread" className="text-sm">
+                  Unread
+                  {filteredTickets.filter(t => t.has_unread_messages).length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                      {filteredTickets.filter(t => t.has_unread_messages).length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="assigned" className="text-sm">Assigned</TabsTrigger>
+                <TabsTrigger value="unassigned" className="text-sm">Unassigned</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-      {/* Tickets Table with Tabs */}
-      <Card>
-        <CardHeader>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="all">All Tickets</TabsTrigger>
-              <TabsTrigger value="unread">Unread</TabsTrigger>
-              <TabsTrigger value="assigned">Assigned</TabsTrigger>
-              <TabsTrigger value="unassigned">Unassigned</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Assignee</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead>Messages</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTickets.map((ticket) => (
-                <TableRow
-                  key={ticket.id}
-                  className={`cursor-pointer hover:bg-gray-50 ${
-                    ticket.has_unread_messages ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                  }`}
-                >
-                  <TableCell>
-                    <div className="space-y-1">
+            <div className="flex gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search tickets..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 border-gray-200"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priority</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Modern Ticket Cards */}
+        <div className="px-6 py-4 space-y-3">
+          {filteredTickets.map((ticket) => (
+            <div
+              key={ticket.id}
+              className={`group cursor-pointer bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-150 ${
+                ticket.has_unread_messages ? 'ring-2 ring-blue-100 border-blue-200' : ''
+              }`}
+              onClick={() => onTicketClick?.(ticket.id)}
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-3 mb-2">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">#{ticket.ticket_number}</span>
+                        <span className="text-sm font-mono text-gray-500">#{ticket.ticket_number}</span>
                         {ticket.has_unread_messages && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-blue-600">New</span>
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 truncate max-w-[200px]">
-                        {ticket.title}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="font-medium">{ticket.customer_name || 'Anonymous'}</p>
-                      <p className="text-sm text-gray-500">{ticket.customer_email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                  <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                  <TableCell>
-                    {ticket.assignee ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="w-3 h-3" />
-                        </div>
-                        <span className="text-sm">{ticket.assignee.email.split('@')[0]}</span>
+                        {getStatusBadge(ticket.status)}
+                        {getPriorityBadge(ticket.priority)}
                       </div>
-                    ) : (
-                      <span className="text-gray-400 text-sm">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-3 h-3 text-gray-400" />
-                      <span className="text-sm text-gray-600">{formatDate(ticket.updated_at)}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <MessageSquare className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{ticket.message_count}</span>
+
+                    <h3 className="text-base font-medium text-gray-900 mb-1 truncate pr-4">
+                      {ticket.title}
+                    </h3>
+
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <User className="w-3 h-3" />
+                        <span>{ticket.customer_name || 'Anonymous'}</span>
+                      </div>
+
+                      {ticket.assignee && (
+                        <div className="flex items-center space-x-1">
+                          <span>assigned to</span>
+                          <span className="font-medium text-gray-700">
+                            {ticket.assignee.email.split('@')[0]}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-1">
+                        <MessageSquare className="w-3 h-3" />
+                        <span>{ticket.message_count}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{formatDate(ticket.updated_at)}</span>
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+
+                  <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
 
           {filteredTickets.length === 0 && (
-            <div className="text-center py-12">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
-              <p className="text-gray-600">
+            <div className="text-center py-16">
+              <div className="mx-auto w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <MessageSquare className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-base font-medium text-gray-900 mb-1">No tickets found</h3>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">
                 {searchQuery || statusFilter !== 'all' || priorityFilter !== 'all'
-                  ? 'Try adjusting your filters or search query'
-                  : 'No support tickets have been created yet'}
+                  ? 'Try adjusting your filters or search query to find what you\'re looking for.'
+                  : 'Your customers haven\'t created any support tickets yet. They\'ll appear here when they do.'}
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

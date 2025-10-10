@@ -57,17 +57,23 @@ export const PLAN_LIMITS = {
   trial: {
     maxSites: 1,
     maxQueriesPerMonth: 100,
-    analyticsLevel: 'basic' as const
+    analyticsLevel: 'basic' as const,
+    baseSeats: 1,
+    maxSeats: 1
   },
   starter: {
     maxSites: 1,
     maxQueriesPerMonth: 2000,
-    analyticsLevel: 'basic' as const
+    analyticsLevel: 'basic' as const,
+    baseSeats: 1,
+    maxSeats: 1
   },
   pro: {
     maxSites: 3,
     maxQueriesPerMonth: 10000,
-    analyticsLevel: 'advanced' as const
+    analyticsLevel: 'advanced' as const,
+    baseSeats: 1,
+    maxSeats: 1
   },
   enterprise: {
     maxSites: -1, // unlimited

@@ -7,8 +7,6 @@ import { ArrowLeft, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { Navbar } from '@/components/Navbar'
-
 export default function AnalyticsPage() {
   const params = useParams()
   const router = useRouter()
@@ -81,10 +79,8 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <main className="container mx-auto px-4 py-8">
+    <div>
+      <div>
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Link href={`/dashboard/websites/${websiteId}`}>
@@ -108,7 +104,7 @@ export default function AnalyticsPage() {
         </div>
 
         <AnalyticsDashboard projectId={websiteId} timeRange={timeRange} />
-      </main>
+      </div>
     </div>
   )
 }

@@ -106,27 +106,27 @@ export async function POST(
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
+    const teamPermissions = userMembership.permissions as { manage_team?: boolean } | null
     const canInvite = userMembership.role === 'owner' ||
-                     (userMembership.role === 'admin' && userMembership.permissions?.manage_team)
+                     (userMembership.role === 'admin' && teamPermissions?.manage_team)
 
     if (!canInvite) {
       return NextResponse.json({ error: 'Insufficient permissions to invite team members' }, { status: 403 })
     }
 
-    // Check if user is already a team member
-    const { data: existingMember } = await supabase
-      .from('team_members')
+    // Check if there's already a pending invitation for this email
+    const { data: existingInvite } = await supabase
+      .from('organization_invites')
       .select('id, status')
       .eq('organization_id', orgId)
-      .eq('user_id', (await supabase.auth.admin.getUserByEmail(email)).data.user?.id)
+      .eq('email', email)
+      .eq('status', 'pending')
       .maybeSingle()
 
-    if (existingMember) {
+    if (existingInvite) {
       return NextResponse.json({
-        error: existingMember.status === 'active'
-          ? 'User is already a team member'
-          : 'User has a pending invitation'
-      }, { status: 400 })
+        error: 'A pending invitation already exists for this email'
+      }, { status: 409 })
     }
 
     // Check seat limits
@@ -141,7 +141,7 @@ export async function POST(
     }
 
     const seatLimits = getSeatLimits(organization.plan_name)
-    const wouldExceedLimit = organization.seat_count >= seatLimits.maxSeats
+    const wouldExceedLimit = (organization.seat_count || 0) >= seatLimits.maxSeats
 
     if (wouldExceedLimit) {
       return NextResponse.json({
@@ -150,6 +150,11 @@ export async function POST(
         currentSeats: organization.seat_count
       }, { status: 400 })
     }
+
+    // Generate invitation token
+    const inviteToken = crypto.randomUUID()
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days from now
 
     // Create invitation
     const { data: invitation, error: inviteError } = await supabase
@@ -160,7 +165,9 @@ export async function POST(
         role: role === 'owner' ? 'admin' : role, // Can't invite as owner
         permissions,
         invited_by: user.id,
-        message
+        message,
+        token: inviteToken,
+        expires_at: expiresAt.toISOString()
       })
       .select()
       .single()

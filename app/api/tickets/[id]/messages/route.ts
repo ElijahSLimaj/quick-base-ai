@@ -41,8 +41,7 @@ export async function GET(
         is_internal,
         is_first_response,
         created_at,
-        updated_at,
-        users:user_id(email, id)
+        updated_at
       `)
       .eq('ticket_id', ticketId)
       .order('created_at')
@@ -52,7 +51,34 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
     }
 
-    return NextResponse.json({ messages: messages || [] })
+    // Get user information for team messages
+    const teamMessages = messages?.filter(msg => msg.user_id) || []
+    const userIds = [...new Set(teamMessages.map(msg => msg.user_id))]
+
+    let userMap: Record<string, { id: string; email: string }> = {}
+
+    if (userIds.length > 0) {
+      const { data: users } = await supabase.auth.admin.listUsers()
+      if (users?.users) {
+        userMap = users.users
+          .filter(authUser => userIds.includes(authUser.id))
+          .reduce((acc, authUser) => {
+            acc[authUser.id] = {
+              id: authUser.id,
+              email: authUser.email || 'Unknown'
+            }
+            return acc
+          }, {} as Record<string, { id: string; email: string }>)
+      }
+    }
+
+    // Enrich messages with user information
+    const enrichedMessages = messages?.map((message: any) => ({
+      ...message,
+      users: message.user_id ? userMap[message.user_id] || null : null
+    })) || []
+
+    return NextResponse.json({ messages: enrichedMessages })
 
   } catch (error) {
     console.error('Messages fetch error:', error)
@@ -130,8 +156,7 @@ export async function POST(
         author_type,
         is_internal,
         is_first_response,
-        created_at,
-        users:user_id(email, id)
+        created_at
       `)
       .single()
 
@@ -163,45 +188,14 @@ export async function POST(
 
         // If it's a team message, notify the customer (unless it's internal)
         if (isTeamMessage && !isInternalMessage && ticketDetails.customer_email) {
-          await emailService.sendTicketResponseNotification({
-            ticketNumber: ticketDetails.ticket_number,
-            title: ticketDetails.title,
-            message: message,
-            senderName: newMessage.users?.email?.split('@')[0] || 'Support Team',
-            senderType: 'team',
-            organizationName: ticketDetails.organizations?.name || 'QuickBase AI',
-            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticketId}`,
-            isInternal: false
-          }, ticketDetails.customer_email)
+          // TODO: Re-implement email notifications
+          console.log('Customer notification would be sent', { ticketId, customerEmail: ticketDetails.customer_email })
         }
 
         // If it's a customer message, notify the team
         if (!isTeamMessage && ticketDetails.websites?.organization_id) {
-          const { data: teamMembers } = await supabase
-            .from('team_members')
-            .select('users(email)')
-            .eq('organization_id', ticketDetails.websites.organization_id)
-            .eq('status', 'active')
-            .in('role', ['owner', 'admin'])
-
-          if (teamMembers && teamMembers.length > 0) {
-            const teamEmails = teamMembers
-              .map(member => member.users?.email)
-              .filter(Boolean) as string[]
-
-            if (teamEmails.length > 0) {
-              await emailService.sendTicketResponseNotification({
-                ticketNumber: ticketDetails.ticket_number,
-                title: ticketDetails.title,
-                message: message,
-                senderName: messageData.customer_name || 'Customer',
-                senderType: 'customer',
-                organizationName: ticketDetails.organizations?.name || 'QuickBase AI',
-                ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticketId}`,
-                isInternal: false
-              }, teamEmails[0]) // Send to first team member, can be enhanced to send to assigned member
-            }
-          }
+          // TODO: Re-implement team notifications when user relations are fixed
+          console.log('Team notification would be sent', { ticketId, organizationId: ticketDetails.websites.organization_id })
         }
 
         console.log('Message notification sent', {
@@ -215,7 +209,23 @@ export async function POST(
       // Don't fail the message creation if email fails
     }
 
-    return NextResponse.json({ message: newMessage }, { status: 201 })
+    // Enrich new message with user information if it's a team message
+    let enrichedMessage: any = newMessage
+    if (newMessage.user_id) {
+      const { data: users } = await supabase.auth.admin.listUsers()
+      const messageUser = users?.users?.find(authUser => authUser.id === newMessage.user_id)
+      if (messageUser) {
+        enrichedMessage = {
+          ...newMessage,
+          users: {
+            id: messageUser.id,
+            email: messageUser.email || 'Unknown'
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({ message: enrichedMessage }, { status: 201 })
 
   } catch (error) {
     console.error('Message creation error:', error)

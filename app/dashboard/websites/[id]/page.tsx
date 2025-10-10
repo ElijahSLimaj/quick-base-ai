@@ -8,8 +8,6 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useNotification } from '@/contexts/NotificationContext'
-import { HelpChatBubble } from '@/components/support/HelpChatBubble'
-import { Navbar } from '@/components/Navbar'
 
 interface Website {
   id: string
@@ -255,10 +253,8 @@ export default function WebsitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar showProfile={true} />
-
-      <main className="container mx-auto px-4 py-8">
+    <div>
+      <div>
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -469,9 +465,7 @@ export default function WebsitePage() {
             </Card>
           </div>
         </div>
-      </main>
-
-      <HelpChatBubble />
+      </div>
     </div>
   )
 }

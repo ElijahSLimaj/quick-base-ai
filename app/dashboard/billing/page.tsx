@@ -11,8 +11,6 @@ import { UsageDisplay } from '@/components/billing/UsageDisplay'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { type PlanKey } from '@/lib/billing/plans'
-import { Navbar } from '@/components/Navbar'
-
 export default function BillingPage() {
   const [currentPlan, setCurrentPlan] = useState<PlanKey>('starter')
   const [websites, setWebsites] = useState<any[]>([])
@@ -89,10 +87,8 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <main className="container mx-auto px-4 py-8">
+    <div>
+      <div>
         <div className="grid lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3">
             <div className="mb-8">
@@ -162,7 +158,7 @@ export default function BillingPage() {
             <UsageDisplay className="sticky top-8" />
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

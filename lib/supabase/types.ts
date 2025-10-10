@@ -90,8 +90,11 @@ export type Database = {
           domain: string
           id: string
           name: string
+          organization_id: string | null
           owner_id: string | null
+          plan_name: string | null
           settings: Json | null
+          sites: Json | null
           stripe_customer_id: string | null
           subscription_id: string | null
           updated_at: string | null
@@ -101,8 +104,11 @@ export type Database = {
           domain: string
           id?: string
           name: string
+          organization_id?: string | null
           owner_id?: string | null
+          plan_name?: string | null
           settings?: Json | null
+          sites?: Json | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
           updated_at?: string | null
@@ -112,13 +118,31 @@ export type Database = {
           domain?: string
           id?: string
           name?: string
+          organization_id?: string | null
           owner_id?: string | null
+          plan_name?: string | null
           settings?: Json | null
+          sites?: Json | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "websites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       queries: {
         Row: {
@@ -223,6 +247,609 @@ export type Database = {
             referencedRelation: "websites"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      organizations: {
+        Row: {
+          additional_seats: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          max_seats: number | null
+          name: string
+          owner_id: string
+          plan_name: string
+          seat_count: number | null
+          settings: Json | null
+          slug: string | null
+          stripe_customer_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_seats?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          max_seats?: number | null
+          name: string
+          owner_id: string
+          plan_name?: string
+          seat_count?: number | null
+          settings?: Json | null
+          slug?: string | null
+          stripe_customer_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_seats?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          max_seats?: number | null
+          name?: string
+          owner_id?: string
+          plan_name?: string
+          seat_count?: number | null
+          settings?: Json | null
+          slug?: string | null
+          stripe_customer_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      organization_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_at: string | null
+          invited_by: string
+          message: string | null
+          organization_id: string
+          permissions: Json | null
+          role: string
+          status: string | null
+          token: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by: string
+          message?: string | null
+          organization_id: string
+          permissions?: Json | null
+          role?: string
+          status?: string | null
+          token: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string
+          message?: string | null
+          organization_id?: string
+          permissions?: Json | null
+          role?: string
+          status?: string | null
+          token?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          joined_at: string | null
+          organization_id: string
+          permissions: Json | null
+          role: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          organization_id: string
+          permissions?: Json | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          organization_id?: string
+          permissions?: Json | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      tickets: {
+        Row: {
+          ai_confidence: number | null
+          ai_response: string | null
+          assigned_at: string | null
+          assigned_to: string | null
+          category: string | null
+          closed_at: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_satisfaction_feedback: string | null
+          customer_satisfaction_rating: number | null
+          customer_user_id: string | null
+          description: string
+          escalation_reason: string | null
+          first_response_at: string | null
+          first_response_time_minutes: number | null
+          id: string
+          organization_id: string | null
+          original_query: string | null
+          priority: string
+          resolution: string | null
+          resolution_time_minutes: number | null
+          resolved_at: string | null
+          sla_breach: boolean | null
+          status: string
+          ticket_number: string
+          title: string
+          updated_at: string | null
+          website_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_response?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_satisfaction_feedback?: string | null
+          customer_satisfaction_rating?: number | null
+          customer_user_id?: string | null
+          description: string
+          escalation_reason?: string | null
+          first_response_at?: string | null
+          first_response_time_minutes?: number | null
+          id?: string
+          organization_id?: string | null
+          original_query?: string | null
+          priority?: string
+          resolution?: string | null
+          resolution_time_minutes?: number | null
+          resolved_at?: string | null
+          sla_breach?: boolean | null
+          status?: string
+          ticket_number: string
+          title: string
+          updated_at?: string | null
+          website_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_response?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_satisfaction_feedback?: string | null
+          customer_satisfaction_rating?: number | null
+          customer_user_id?: string | null
+          description?: string
+          escalation_reason?: string | null
+          first_response_at?: string | null
+          first_response_time_minutes?: number | null
+          id?: string
+          organization_id?: string | null
+          original_query?: string | null
+          priority?: string
+          resolution?: string | null
+          resolution_time_minutes?: number | null
+          resolved_at?: string | null
+          sla_breach?: boolean | null
+          status?: string
+          ticket_number?: string
+          title?: string
+          updated_at?: string | null
+          website_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_website_id_fkey"
+            columns: ["website_id"]
+            isOneToOne: false
+            referencedRelation: "websites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_customer_user_id_fkey"
+            columns: ["customer_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      ticket_messages: {
+        Row: {
+          attachments: Json | null
+          author_type: string
+          content_type: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          email_message_id: string | null
+          id: string
+          in_reply_to: string | null
+          is_first_response: boolean | null
+          is_internal: boolean | null
+          message: string
+          message_type: string
+          read_at: string | null
+          read_by: string | null
+          ticket_id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          author_type: string
+          content_type?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          email_message_id?: string | null
+          id?: string
+          in_reply_to?: string | null
+          is_first_response?: boolean | null
+          is_internal?: boolean | null
+          message: string
+          message_type?: string
+          read_at?: string | null
+          read_by?: string | null
+          ticket_id: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          author_type?: string
+          content_type?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          email_message_id?: string | null
+          id?: string
+          in_reply_to?: string | null
+          is_first_response?: boolean | null
+          is_internal?: boolean | null
+          message?: string
+          message_type?: string
+          read_at?: string | null
+          read_by?: string | null
+          ticket_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_messages_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      ticket_attachments: {
+        Row: {
+          created_at: string | null
+          customer_email: string | null
+          expires_at: string | null
+          file_extension: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id: string
+          is_internal: boolean | null
+          is_public: boolean | null
+          message_id: string | null
+          metadata: Json | null
+          mime_type: string
+          original_filename: string
+          processed_at: string | null
+          scan_result: string | null
+          scan_status: string | null
+          text_content: string | null
+          thumbnail_path: string | null
+          ticket_id: string
+          updated_at: string | null
+          upload_source: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_email?: string | null
+          expires_at?: string | null
+          file_extension?: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id?: string
+          is_internal?: boolean | null
+          is_public?: boolean | null
+          message_id?: string | null
+          metadata?: Json | null
+          mime_type: string
+          original_filename: string
+          processed_at?: string | null
+          scan_result?: string | null
+          scan_status?: string | null
+          text_content?: string | null
+          thumbnail_path?: string | null
+          ticket_id: string
+          updated_at?: string | null
+          upload_source?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_email?: string | null
+          expires_at?: string | null
+          file_extension?: string | null
+          file_path?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          is_internal?: boolean | null
+          is_public?: boolean | null
+          message_id?: string | null
+          metadata?: Json | null
+          mime_type?: string
+          original_filename?: string
+          processed_at?: string | null
+          scan_result?: string | null
+          scan_status?: string | null
+          text_content?: string | null
+          thumbnail_path?: string | null
+          ticket_id?: string
+          updated_at?: string | null
+          upload_source?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      crawl_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          job_type: string
+          pages_crawled: number | null
+          project_id: string | null
+          scheduled_at: string
+          site_url: string
+          started_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_type: string
+          pages_crawled?: number | null
+          project_id?: string | null
+          scheduled_at: string
+          site_url: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_type?: string
+          pages_crawled?: number | null
+          project_id?: string | null
+          scheduled_at?: string
+          site_url?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "websites"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      usage_tracking: {
+        Row: {
+          answers_used: number | null
+          created_at: string | null
+          crawls_used: number | null
+          id: string
+          manual_recrawls_used: number | null
+          period_end: string
+          period_start: string
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          answers_used?: number | null
+          created_at?: string | null
+          crawls_used?: number | null
+          id?: string
+          manual_recrawls_used?: number | null
+          period_end: string
+          period_start: string
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          answers_used?: number | null
+          created_at?: string | null
+          crawls_used?: number | null
+          id?: string
+          manual_recrawls_used?: number | null
+          period_end?: string
+          period_start?: string
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_tracking_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "websites"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }

@@ -13,14 +13,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const websiteId = searchParams.get('website_id')
+    const organizationId = searchParams.get('organization_id')
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')
     const assignedTo = searchParams.get('assigned_to')
+    const search = searchParams.get('search')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = (page - 1) * limit
 
-    // Build query
+    // Build query with enhanced selection for dashboard
     let query = supabase
       .from('tickets')
       .select(`
@@ -46,10 +48,29 @@ export async function GET(request: NextRequest) {
         updated_at,
         resolved_at,
         closed_at,
-        websites!inner(id, name, domain, organization_id)
+        websites!inner(id, name, domain, organization_id),
+        ticket_messages(id, is_internal, created_at, user_id, customer_email)
       `)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
+
+    // Filter by organization if specified (for organization dashboard)
+    if (organizationId) {
+      // Verify user has access to this organization
+      const { data: membership } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .eq('status', 'active')
+        .single()
+
+      if (!membership) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      }
+
+      query = query.eq('organization_id', organizationId)
+    }
 
     // Filter by website if specified
     if (websiteId) {
@@ -71,6 +92,11 @@ export async function GET(request: NextRequest) {
       query = query.eq('assigned_to', assignedTo)
     }
 
+    // Search filter
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%`)
+    }
+
     const { data: tickets, error, count } = await query
 
     if (error) {
@@ -78,8 +104,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch tickets' }, { status: 500 })
     }
 
+    // Get assignee information for tickets that have assigned_to
+    const assignedTickets = tickets?.filter(ticket => ticket.assigned_to) || []
+    const assigneeIds = [...new Set(assignedTickets.map(ticket => ticket.assigned_to))]
+
+    let assigneeMap: Record<string, { id: string; email: string }> = {}
+
+    if (assigneeIds.length > 0) {
+      // Get assignee details from auth.users through a separate query
+      const { data: assignees } = await supabase.auth.admin.listUsers()
+
+      if (assignees?.users) {
+        assigneeMap = assignees.users
+          .filter(authUser => assigneeIds.includes(authUser.id))
+          .reduce((acc, authUser) => {
+            acc[authUser.id] = {
+              id: authUser.id,
+              email: authUser.email || 'Unknown'
+            }
+            return acc
+          }, {} as Record<string, { id: string; email: string }>)
+      }
+    }
+
+    // Transform tickets to include computed fields for dashboard
+    const enrichedTickets = tickets?.map(ticket => ({
+      ...ticket,
+      message_count: ticket.ticket_messages?.length || 0,
+      has_unread_messages: ticket.ticket_messages?.some(msg =>
+        msg.user_id !== user.id &&
+        new Date(msg.created_at || new Date()) > new Date(ticket.updated_at || ticket.created_at || new Date())
+      ) || false,
+      assignee: ticket.assigned_to ? assigneeMap[ticket.assigned_to] || null : null,
+      website: ticket.websites ? {
+        id: ticket.websites.id,
+        name: ticket.websites.name
+      } : null
+    })) || []
+
     return NextResponse.json({
-      tickets: tickets || [],
+      tickets: enrichedTickets,
       pagination: {
         page,
         limit,
@@ -135,7 +199,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if website plan supports ticketing
-    if (!hasTicketingFeature(website.plan_name)) {
+    if (!hasTicketingFeature(website.plan_name || 'trial')) {
       return NextResponse.json({
         error: 'Ticketing is only available on Enterprise plans',
         upgradeRequired: true,
@@ -143,11 +207,16 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
+    // Generate unique ticket number
+    const ticketNumber = `T-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
+
     // Create ticket
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
         website_id,
+        organization_id: website.organization_id,
+        ticket_number: ticketNumber,
         title,
         description,
         priority,

@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Get all team members (if user has permission)
-    const userPermissions = organization.team_members[0]?.permissions
+    const userPermissions = organization.team_members[0]?.permissions as { view_tickets?: boolean } | null
     const canViewTeam = userPermissions?.view_tickets || organization.team_members[0]?.role === 'owner'
 
     let allTeamMembers = null
@@ -114,8 +114,9 @@ export async function PATCH(
     }
 
     // Only owners and admins with manage_team permission can update organization
+    const updatePermissions = teamMember.permissions as { manage_team?: boolean } | null
     const canUpdate = teamMember.role === 'owner' ||
-                     (teamMember.role === 'admin' && teamMember.permissions?.manage_team)
+                     (teamMember.role === 'admin' && updatePermissions?.manage_team)
 
     if (!canUpdate) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })

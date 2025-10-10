@@ -44,7 +44,8 @@ export async function PATCH(
 
     // Permission checks
     const isOwner = userMembership.role === 'owner'
-    const isAdmin = userMembership.role === 'admin' && userMembership.permissions?.manage_team
+    const memberPermissions = userMembership.permissions as { manage_team?: boolean } | null
+    const isAdmin = userMembership.role === 'admin' && memberPermissions?.manage_team
     const isSelfUpdate = targetMember.user_id === user.id
 
     // Only owners can update other owners/admins
@@ -164,7 +165,8 @@ export async function DELETE(
     }
 
     const isOwner = userMembership.role === 'owner'
-    const isAdmin = userMembership.role === 'admin' && userMembership.permissions?.manage_team
+    const deletePermissions = userMembership.permissions as { manage_team?: boolean } | null
+    const isAdmin = userMembership.role === 'admin' && deletePermissions?.manage_team
     const isSelfRemoval = targetMember.user_id === user.id
 
     // Permission checks

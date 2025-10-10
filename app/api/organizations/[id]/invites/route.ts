@@ -30,8 +30,9 @@ export async function GET(
     }
 
     // Only owners and admins can view invites
+    const permissions = userMembership.permissions as { manage_team?: boolean } | null
     const canViewInvites = userMembership.role === 'owner' ||
-                          (userMembership.role === 'admin' && userMembership.permissions?.manage_team)
+                          (userMembership.role === 'admin' && permissions?.manage_team)
 
     if (!canViewInvites) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -107,8 +108,9 @@ export async function POST(
     }
 
     // Only owners and admins can invite
+    const invitePermissions = userMembership.permissions as { manage_team?: boolean } | null
     const canInvite = userMembership.role === 'owner' ||
-                     (userMembership.role === 'admin' && userMembership.permissions?.manage_team)
+                     (userMembership.role === 'admin' && invitePermissions?.manage_team)
 
     if (!canInvite) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -126,7 +128,7 @@ export async function POST(
     }
 
     // Check if there are available seats
-    if (organization.seat_count >= organization.max_seats) {
+    if ((organization.seat_count || 0) >= (organization.max_seats || 0)) {
       return NextResponse.json({
         error: 'No available seats. Upgrade your plan to add more team members.'
       }, { status: 403 })
@@ -207,16 +209,13 @@ export async function POST(
 
     // Send invitation email
     try {
-      const { data: inviterUser } = await supabase
-        .from('users')
-        .select('email')
-        .eq('id', user.id)
-        .single()
+      const { data: inviterUser } = await supabase.auth.getUser()
+      const inviterEmail = inviterUser.user?.email
 
       await emailService.sendTeamInvitation({
         organizationName: organization.name,
-        inviterName: inviterUser?.email?.split('@')[0] || 'Team Admin',
-        inviterEmail: inviterUser?.email || user.email || '',
+        inviterName: inviterEmail?.split('@')[0] || 'Team Admin',
+        inviterEmail: inviterEmail || user.email || '',
         inviteToken: inviteToken,
         role: role,
         expiresAt: expiresAt.toISOString()

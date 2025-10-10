@@ -16,27 +16,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invitation token is required' }, { status: 400 })
     }
 
-    // Use the database function to accept the invitation
-    const { data, error } = await supabase.rpc('accept_organization_invite', {
-      invite_token: token,
-      accepting_user_id: user.id
-    })
+    // Find and validate the invitation
+    const { data: invite, error: findError } = await supabase
+      .from('organization_invites')
+      .select('*')
+      .eq('token', token)
+      .eq('status', 'pending')
+      .single()
 
-    if (error) {
-      console.error('Error accepting invitation:', error)
+    if (findError || !invite) {
+      return NextResponse.json({ error: 'Invalid or expired invitation' }, { status: 404 })
+    }
+
+    // Check if invitation has expired
+    if (new Date(invite.expires_at) < new Date()) {
+      return NextResponse.json({ error: 'Invitation has expired' }, { status: 400 })
+    }
+
+    // Accept the invitation by creating team membership and updating invite
+    const { error: memberError } = await supabase
+      .from('team_members')
+      .insert({
+        organization_id: invite.organization_id,
+        user_id: user.id,
+        role: invite.role,
+        permissions: invite.permissions,
+        invited_by: invite.invited_by,
+        status: 'active',
+        joined_at: new Date().toISOString()
+      })
+
+    if (memberError) {
+      console.error('Error creating team membership:', memberError)
       return NextResponse.json({ error: 'Failed to accept invitation' }, { status: 500 })
     }
 
-    const result = data as { success: boolean; error?: string; organization?: any; role?: string }
+    // Update invitation status
+    const { error: updateError } = await supabase
+      .from('organization_invites')
+      .update({
+        status: 'accepted',
+        accepted_by: user.id,
+        accepted_at: new Date().toISOString()
+      })
+      .eq('id', invite.id)
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 })
+    if (updateError) {
+      console.error('Error updating invitation:', updateError)
     }
+
+    // Get organization details for response
+    const { data: organization } = await supabase
+      .from('organizations')
+      .select('id, name, plan_name')
+      .eq('id', invite.organization_id)
+      .single()
 
     return NextResponse.json({
       message: 'Invitation accepted successfully',
-      organization: result.organization,
-      role: result.role
+      organization,
+      role: invite.role
     })
 
   } catch (error) {
