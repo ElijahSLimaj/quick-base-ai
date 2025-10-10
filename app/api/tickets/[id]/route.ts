@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { emailService } from '@/lib/email/resend'
 
 export async function GET(
   request: NextRequest,
@@ -98,7 +99,19 @@ export async function PATCH(
     // Get current ticket to verify access
     const { data: ticket } = await supabase
       .from('tickets')
-      .select('id, website_id, organization_id, status, assigned_to')
+      .select(`
+        id,
+        website_id,
+        organization_id,
+        status,
+        assigned_to,
+        ticket_number,
+        title,
+        customer_email,
+        customer_name,
+        websites(name, organization_id),
+        organizations(name)
+      `)
       .eq('id', ticketId)
       .single()
 
@@ -179,6 +192,88 @@ export async function PATCH(
     if (updateError) {
       console.error('Error updating ticket:', updateError)
       return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 })
+    }
+
+    // Send email notifications for status changes
+    try {
+      if (filteredUpdates.status && filteredUpdates.status !== ticket.status) {
+        const recipientEmails: string[] = []
+
+        // Notify customer if status changed to resolved/closed
+        if (ticket.customer_email && ['resolved', 'closed'].includes(filteredUpdates.status)) {
+          recipientEmails.push(ticket.customer_email)
+        }
+
+        // Notify team members
+        if (ticket.organization_id) {
+          const { data: teamMembers } = await supabase
+            .from('team_members')
+            .select('users(email)')
+            .eq('organization_id', ticket.organization_id)
+            .eq('status', 'active')
+            .in('role', ['owner', 'admin'])
+
+          if (teamMembers && teamMembers.length > 0) {
+            const teamEmails = teamMembers
+              .map(member => member.users?.email)
+              .filter(Boolean) as string[]
+            recipientEmails.push(...teamEmails)
+          }
+        }
+
+        if (recipientEmails.length > 0) {
+          await emailService.sendTicketStatusChangeNotification({
+            ticketNumber: ticket.ticket_number,
+            title: ticket.title,
+            customerName: ticket.customer_name,
+            customerEmail: ticket.customer_email,
+            organizationName: ticket.organizations?.name || 'QuickBase AI',
+            websiteName: ticket.websites?.name,
+            status: filteredUpdates.status,
+            priority: updatedTicket.priority,
+            createdAt: updatedTicket.created_at,
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticketId}`
+          }, ticket.status, [...new Set(recipientEmails)])
+        }
+      }
+
+      // Send assignment notification
+      if (filteredUpdates.assigned_to && filteredUpdates.assigned_to !== ticket.assigned_to) {
+        if (filteredUpdates.assigned_to) {
+          const { data: assignedUser } = await supabase
+            .from('users')
+            .select('email')
+            .eq('id', filteredUpdates.assigned_to)
+            .single()
+
+          if (assignedUser?.email) {
+            await emailService.sendTicketAssignmentNotification({
+              ticketNumber: ticket.ticket_number,
+              title: ticket.title,
+              description: updatedTicket.description,
+              customerName: ticket.customer_name,
+              customerEmail: ticket.customer_email,
+              assigneeName: assignedUser.email.split('@')[0],
+              assigneeEmail: assignedUser.email,
+              organizationName: ticket.organizations?.name || 'QuickBase AI',
+              websiteName: ticket.websites?.name,
+              status: updatedTicket.status,
+              priority: updatedTicket.priority,
+              createdAt: updatedTicket.created_at,
+              ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticketId}`
+            }, assignedUser.email)
+          }
+        }
+      }
+
+      console.log('Ticket update notifications sent', {
+        ticketId,
+        statusChanged: filteredUpdates.status !== ticket.status,
+        assignmentChanged: filteredUpdates.assigned_to !== ticket.assigned_to
+      })
+    } catch (emailError) {
+      console.error('Failed to send ticket update notifications:', emailError)
+      // Don't fail the update if email fails
     }
 
     return NextResponse.json({ ticket: updatedTicket })

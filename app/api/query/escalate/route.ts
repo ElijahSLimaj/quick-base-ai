@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { hasTicketingFeature } from '@/lib/billing/plans'
+import { emailService } from '@/lib/email/resend'
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
@@ -134,8 +135,42 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    // TODO: Send notification email to team
-    // await sendTicketNotification(ticket, website)
+    // Send notification email to team
+    try {
+      // Get team members with ticket management permissions
+      const { data: teamMembers } = await supabase
+        .from('team_members')
+        .select('users(email)')
+        .eq('organization_id', website.organization_id)
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin'])
+
+      if (teamMembers && teamMembers.length > 0) {
+        const teamEmails = teamMembers
+          .map(member => member.users?.email)
+          .filter(Boolean) as string[]
+
+        if (teamEmails.length > 0) {
+          await emailService.sendNewTicketNotification({
+            ticketNumber: ticket.ticket_number,
+            title: ticket.title,
+            description: ticketDescription,
+            customerName: customerName,
+            customerEmail: customerEmail,
+            organizationName: website.name,
+            status: ticket.status,
+            priority: ticket.priority,
+            createdAt: ticket.created_at,
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticket.id}`
+          }, teamEmails)
+
+          console.log('Escalation API: Notification email sent to team', { teamEmails: teamEmails.length })
+        }
+      }
+    } catch (emailError) {
+      console.error('Escalation API: Failed to send notification email:', emailError)
+      // Don't fail the ticket creation if email fails
+    }
 
     const response = NextResponse.json({
       success: true,

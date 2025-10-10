@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { emailService } from '@/lib/email/resend'
 
 export async function GET(
   request: NextRequest,
@@ -139,8 +140,80 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to create message' }, { status: 500 })
     }
 
-    // TODO: Send email notification here
-    // await sendMessageNotification(newMessage, ticket)
+    // Send email notification
+    try {
+      // Get ticket details with organization info
+      const { data: ticketDetails } = await supabase
+        .from('tickets')
+        .select(`
+          id,
+          ticket_number,
+          title,
+          customer_email,
+          customer_name,
+          websites(name, organization_id),
+          organizations(name)
+        `)
+        .eq('id', ticketId)
+        .single()
+
+      if (ticketDetails) {
+        const isTeamMessage = messageData.author_type === 'team'
+        const isInternalMessage = messageData.is_internal
+
+        // If it's a team message, notify the customer (unless it's internal)
+        if (isTeamMessage && !isInternalMessage && ticketDetails.customer_email) {
+          await emailService.sendTicketResponseNotification({
+            ticketNumber: ticketDetails.ticket_number,
+            title: ticketDetails.title,
+            message: message,
+            senderName: newMessage.users?.email?.split('@')[0] || 'Support Team',
+            senderType: 'team',
+            organizationName: ticketDetails.organizations?.name || 'QuickBase AI',
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticketId}`,
+            isInternal: false
+          }, ticketDetails.customer_email)
+        }
+
+        // If it's a customer message, notify the team
+        if (!isTeamMessage && ticketDetails.websites?.organization_id) {
+          const { data: teamMembers } = await supabase
+            .from('team_members')
+            .select('users(email)')
+            .eq('organization_id', ticketDetails.websites.organization_id)
+            .eq('status', 'active')
+            .in('role', ['owner', 'admin'])
+
+          if (teamMembers && teamMembers.length > 0) {
+            const teamEmails = teamMembers
+              .map(member => member.users?.email)
+              .filter(Boolean) as string[]
+
+            if (teamEmails.length > 0) {
+              await emailService.sendTicketResponseNotification({
+                ticketNumber: ticketDetails.ticket_number,
+                title: ticketDetails.title,
+                message: message,
+                senderName: messageData.customer_name || 'Customer',
+                senderType: 'customer',
+                organizationName: ticketDetails.organizations?.name || 'QuickBase AI',
+                ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/tickets/${ticketId}`,
+                isInternal: false
+              }, teamEmails[0]) // Send to first team member, can be enhanced to send to assigned member
+            }
+          }
+        }
+
+        console.log('Message notification sent', {
+          ticketId,
+          messageType: messageData.author_type,
+          isInternal: isInternalMessage
+        })
+      }
+    } catch (emailError) {
+      console.error('Failed to send message notification:', emailError)
+      // Don't fail the message creation if email fails
+    }
 
     return NextResponse.json({ message: newMessage }, { status: 201 })
 

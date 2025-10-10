@@ -433,6 +433,268 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+      /* Escalation Button Styles */
+      .qb-ai-escalation {
+        margin: 12px 0;
+        padding: 12px;
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #0ea5e9;
+        border-radius: 8px;
+      }
+
+      .qb-ai-escalation-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .qb-ai-escalation-text {
+        font-size: 14px;
+        color: #0c4a6e;
+        line-height: 1.4;
+      }
+
+      .qb-ai-escalation-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: #0ea5e9;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        align-self: flex-start;
+      }
+
+      .qb-ai-escalation-btn:hover {
+        background: #0284c7;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
+      }
+
+      /* Upgrade Message Styles */
+      .qb-ai-upgrade {
+        margin: 12px 0;
+        padding: 12px;
+        background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+      }
+
+      .qb-ai-upgrade-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .qb-ai-upgrade-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .qb-ai-upgrade-text {
+        font-size: 13px;
+        color: #92400e;
+        line-height: 1.4;
+      }
+
+      /* Modal Styles */
+      .qb-ai-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+      }
+
+      .qb-ai-modal {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        max-width: 500px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .qb-ai-modal-header {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .qb-ai-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .qb-ai-modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+      }
+
+      .qb-ai-modal-close:hover {
+        background: #f3f4f6;
+        color: #374151;
+      }
+
+      .qb-ai-modal-content {
+        padding: 24px;
+      }
+
+      .qb-ai-modal-content p {
+        margin: 0 0 20px 0;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+
+      .qb-ai-escalation-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .qb-ai-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .qb-ai-form-group label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+      }
+
+      .qb-ai-form-group input,
+      .qb-ai-form-group textarea {
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+      }
+
+      .qb-ai-form-group input:focus,
+      .qb-ai-form-group textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .qb-ai-form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .qb-ai-form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
+
+      .qb-ai-btn-primary {
+        padding: 10px 20px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .qb-ai-btn-primary:hover:not(:disabled) {
+        background: #1d4ed8;
+      }
+
+      .qb-ai-btn-primary:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .qb-ai-btn-secondary {
+        padding: 10px 20px;
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .qb-ai-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+      }
+
+      .qb-ai-escalation-error {
+        padding: 12px;
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .qb-ai-success-message {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .qb-ai-success-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+
+      .qb-ai-success-message h4 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #059669;
+      }
+
+      .qb-ai-success-message p {
+        margin: 0 0 4px 0;
+        color: #374151;
+      }
+
+      .qb-ai-success-note {
+        font-size: 13px;
+        color: #6b7280;
+        font-style: italic;
+      }
     `;
 
     const styleSheet = document.createElement('style');
@@ -542,6 +804,13 @@
           console.warn('QuickBase AI: Failed to load markdown library:', error);
         }
         await addMessage(data.answer, 'ai');
+
+        // Check if escalation is available and show "Talk to Human" button
+        if (data.canEscalateToHuman && (data.lowConfidence || data.escalationAvailable)) {
+          addEscalationButton(data);
+        } else if (!data.canEscalateToHuman && data.lowConfidence && data.upgradeForTicketing) {
+          addUpgradeMessage(data.upgradeForTicketing);
+        }
       } else {
         throw new Error('No answer received from the server');
       }
@@ -571,6 +840,207 @@
       console.error('QuickBase AI Error:', error);
     } finally {
       sendBtn.disabled = false;
+    }
+  }
+
+  function addEscalationButton(data) {
+    const messages = document.querySelector('.qb-ai-messages');
+
+    // Remove any existing escalation buttons
+    const existingEscalation = messages.querySelector('.qb-ai-escalation');
+    if (existingEscalation) existingEscalation.remove();
+
+    const escalationDiv = document.createElement('div');
+    escalationDiv.className = 'qb-ai-escalation';
+
+    const confidenceText = data.lowConfidence
+      ? 'I might not have the best answer for your question.'
+      : 'Need more help?';
+
+    escalationDiv.innerHTML = `
+      <div class="qb-ai-escalation-content">
+        <div class="qb-ai-escalation-text">
+          ${confidenceText} Would you like to talk to a human expert?
+        </div>
+        <button class="qb-ai-escalation-btn" onclick="window.quickbaseAI.escalateToHuman(${JSON.stringify(data.escalationContext).replace(/"/g, '&quot;')})">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Talk to Human
+        </button>
+      </div>
+    `;
+
+    messages.appendChild(escalationDiv);
+
+    // Smooth scroll to bottom
+    setTimeout(() => {
+      messages.scrollTop = messages.scrollHeight;
+    }, 10);
+  }
+
+  function addUpgradeMessage(upgradeMessage) {
+    const messages = document.querySelector('.qb-ai-messages');
+
+    // Remove any existing upgrade messages
+    const existingUpgrade = messages.querySelector('.qb-ai-upgrade');
+    if (existingUpgrade) existingUpgrade.remove();
+
+    const upgradeDiv = document.createElement('div');
+    upgradeDiv.className = 'qb-ai-upgrade';
+    upgradeDiv.innerHTML = `
+      <div class="qb-ai-upgrade-content">
+        <div class="qb-ai-upgrade-icon">🚀</div>
+        <div class="qb-ai-upgrade-text">
+          <strong>Need human support?</strong><br>
+          ${upgradeMessage}
+        </div>
+      </div>
+    `;
+
+    messages.appendChild(upgradeDiv);
+
+    // Smooth scroll to bottom
+    setTimeout(() => {
+      messages.scrollTop = messages.scrollHeight;
+    }, 10);
+  }
+
+  window.quickbaseAI = {
+    escalateToHuman: function(escalationContext) {
+      showEscalationDialog(escalationContext);
+    }
+  };
+
+  function showEscalationDialog(escalationContext) {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'qb-ai-modal-overlay';
+
+    overlay.innerHTML = `
+      <div class="qb-ai-modal">
+        <div class="qb-ai-modal-header">
+          <h3>Talk to Human Expert</h3>
+          <button class="qb-ai-modal-close">&times;</button>
+        </div>
+        <div class="qb-ai-modal-content">
+          <p>Please provide your contact information and we'll connect you with a human expert.</p>
+          <form class="qb-ai-escalation-form">
+            <div class="qb-ai-form-group">
+              <label for="escalation-name">Your Name</label>
+              <input type="text" id="escalation-name" name="name" required>
+            </div>
+            <div class="qb-ai-form-group">
+              <label for="escalation-email">Email Address</label>
+              <input type="email" id="escalation-email" name="email" required>
+            </div>
+            <div class="qb-ai-form-group">
+              <label for="escalation-message">Additional Message (Optional)</label>
+              <textarea id="escalation-message" name="message" rows="3" placeholder="Is there anything specific you'd like our expert to know?"></textarea>
+            </div>
+            <div class="qb-ai-form-actions">
+              <button type="button" class="qb-ai-btn-secondary" onclick="this.closest('.qb-ai-modal-overlay').remove()">Cancel</button>
+              <button type="submit" class="qb-ai-btn-primary">Create Support Ticket</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Setup form submission
+    const form = overlay.querySelector('.qb-ai-escalation-form');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitEscalation(escalationContext, form, overlay);
+    });
+
+    // Setup close button
+    overlay.querySelector('.qb-ai-modal-close').addEventListener('click', () => {
+      overlay.remove();
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
+  }
+
+  async function submitEscalation(escalationContext, form, overlay) {
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating Ticket...';
+
+    try {
+      const escalationData = {
+        ...escalationContext,
+        customerName: formData.get('name'),
+        customerEmail: formData.get('email'),
+        customerMessage: formData.get('message')
+      };
+
+      const response = await fetch(CONFIG.apiUrl.replace('/query', '/query/escalate'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(escalationData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create support ticket');
+      }
+
+      // Show success message
+      overlay.innerHTML = `
+        <div class="qb-ai-modal">
+          <div class="qb-ai-modal-header">
+            <h3>Support Ticket Created</h3>
+            <button class="qb-ai-modal-close" onclick="this.closest('.qb-ai-modal-overlay').remove()">&times;</button>
+          </div>
+          <div class="qb-ai-modal-content">
+            <div class="qb-ai-success-message">
+              <div class="qb-ai-success-icon">✅</div>
+              <div>
+                <h4>Ticket #${data.ticket.number} Created</h4>
+                <p>${data.message}</p>
+                <p class="qb-ai-success-note">You should receive an email confirmation shortly.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Auto-close after 5 seconds
+      setTimeout(() => {
+        overlay.remove();
+      }, 5000);
+
+    } catch (error) {
+      console.error('Escalation Error:', error);
+
+      // Show error message
+      const errorDiv = form.querySelector('.qb-ai-escalation-error') || document.createElement('div');
+      errorDiv.className = 'qb-ai-escalation-error';
+      errorDiv.textContent = error.message || 'Failed to create support ticket. Please try again.';
+
+      if (!form.querySelector('.qb-ai-escalation-error')) {
+        form.insertBefore(errorDiv, form.querySelector('.qb-ai-form-actions'));
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
     }
   }
 

@@ -54,15 +54,30 @@ export const POST = withPlanGuard(
         return NextResponse.json({ error: 'Name and domain are required' }, { status: 400 })
       }
 
+      // Check if user belongs to an organization
+      const { data: userMembership } = await supabase
+        .from('team_members')
+        .select('organization_id, organizations(plan_name)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single()
+
+      let websiteData: any = {
+        name,
+        domain,
+        owner_id: user.id,
+        settings: {}
+      }
+
+      // If user belongs to an organization, link the website to it
+      if (userMembership?.organization_id) {
+        websiteData.organization_id = userMembership.organization_id
+        websiteData.plan_name = userMembership.organizations?.plan_name || 'trial'
+      }
+
       const { data: website, error } = await supabase
         .from('websites')
-        .insert({
-          name,
-          domain,
-          owner_id: user.id,
-          settings: {}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        .insert(websiteData)
         .select()
         .single()
 

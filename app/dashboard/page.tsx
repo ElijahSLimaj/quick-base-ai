@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Plus, FileText, MessageCircle, Trash2, User } from 'lucide-react'
+import { Plus, FileText, MessageCircle, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -13,6 +13,8 @@ import { PlanLimitBanner } from '@/components/billing/PlanLimitBanner'
 import { TrialBanner } from '@/components/billing/TrialBanner'
 import { HelpChatBubble } from '@/components/support/HelpChatBubble'
 import { Navbar } from '@/components/Navbar'
+import { EnterpriseNavigation } from '@/components/dashboard/EnterpriseNavigation'
+import { EnterpriseDashboardHeader } from '@/components/dashboard/EnterpriseDashboardHeader'
 
 interface Website {
   id: string
@@ -21,6 +23,14 @@ interface Website {
   created_at: string
   content?: Array<{ count: number }>
   queries?: Array<{ count: number }>
+}
+
+interface Organization {
+  id: string
+  name: string
+  plan_name: string
+  seat_count: number
+  max_seats: number
 }
 
 export default function DashboardPage() {
@@ -32,6 +42,8 @@ export default function DashboardPage() {
   const [deletingWebsite, setDeletingWebsite] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
+  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [unreadTickets, setUnreadTickets] = useState(0)
   const router = useRouter()
   const supabase = createClient()
   const { showSuccess, showError } = useNotification()
@@ -49,6 +61,32 @@ export default function DashboardPage() {
       router.push('/login')
     }
   }, [router, supabase.auth])
+
+  const fetchOrganization = useCallback(async () => {
+    try {
+      const response = await fetch('/api/organizations')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.organizations && data.organizations.length > 0) {
+          setOrganization(data.organizations[0])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching organization:', error)
+    }
+  }, [])
+
+  const fetchUnreadTickets = useCallback(async () => {
+    try {
+      const response = await fetch('/api/tickets?status=open&unread=true')
+      if (response.ok) {
+        const data = await response.json()
+        setUnreadTickets(data.tickets?.length || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching unread tickets:', error)
+    }
+  }, [])
 
   const fetchWebsites = useCallback(async () => {
     try {
@@ -77,8 +115,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) {
       fetchWebsites()
+      fetchOrganization()
+      fetchUnreadTickets()
     }
-  }, [user, fetchWebsites])
+  }, [user, fetchWebsites, fetchOrganization, fetchUnreadTickets])
 
   const handleCreateWebsite = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -160,26 +200,53 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar 
-        showProfile={true} 
-        showSignOut={true} 
-        onSignOut={handleSignOut} 
+      <Navbar
+        showProfile={true}
+        showSignOut={true}
+        onSignOut={handleSignOut}
       />
 
-      <TrialBanner />
-      <PlanLimitBanner action="create_website" />
+      {/* Enterprise Dashboard Header */}
+      <EnterpriseDashboardHeader
+        organization={organization}
+        stats={{
+          totalWebsites: websites.length,
+          totalTickets: 0,
+          openTickets: unreadTickets,
+          teamMembers: organization?.seat_count || 0,
+          monthlyQueries: 0
+        }}
+      />
+
+      {/* Enterprise Navigation */}
+      <EnterpriseNavigation
+        userOrganization={organization}
+        unreadTickets={unreadTickets}
+      />
+
+      {!organization?.plan_name || organization.plan_name !== 'enterprise' ? (
+        <>
+          <TrialBanner />
+          <PlanLimitBanner action="create_website" />
+        </>
+      ) : null}
 
       <main className="container mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Your Websites</h1>
-                <p className="text-gray-600 mt-2">Manage your AI support widgets</p>
-              </div>
-              <Button onClick={() => setShowCreateForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Website
-              </Button>
-            </div>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Your Websites</h1>
+            <p className="text-gray-600 mt-2">
+              {organization?.plan_name === 'enterprise'
+                ? 'Unlimited AI support widgets for your organization'
+                : 'Manage your AI support widgets'
+              }
+            </p>
+          </div>
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Website
+          </Button>
+        </div>
 
         {showCreateForm && (
           <Card className="mb-8 border-0 bg-white shadow-lg">

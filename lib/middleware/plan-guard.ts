@@ -23,34 +23,99 @@ export async function planGuard(
       )
     }
 
-    // Get user's websites
-    const { data: websites } = await supabase
-      .from('websites')
-      .select('id')
-      .eq('owner_id', user.id)
+    // Check if user belongs to an organization first
+    const { data: userMembership } = await supabase
+      .from('team_members')
+      .select('organization_id, organizations(plan_name, max_seats)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single()
 
-    const siteCount = websites?.length || 0
-    const websiteIds = websites?.map(w => w.id) || []
+    let plan = 'trial'
+    let siteCount = 0
 
-    // Get user's subscription
-    const { data: subscriptions } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .in('website_id', websiteIds)
+    if (userMembership?.organization_id) {
+      // User belongs to an organization - use organization plan
+      plan = userMembership.organizations?.plan_name || 'trial'
 
-    const activeSub = subscriptions?.find(sub => sub.status === 'active')
-    let plan = activeSub?.plan || 'trial'
+      // Count websites in the organization
+      const { data: orgWebsites } = await supabase
+        .from('websites')
+        .select('id')
+        .eq('organization_id', userMembership.organization_id)
 
-    // Check if trial is expired
-    if ((activeSub as any)?.plan_type === 'free' && (activeSub as any)?.trial_ends_at) {
-      const trialEnd = new Date((activeSub as any).trial_ends_at)
-      if (new Date() > trialEnd) {
-        plan = 'expired_trial'
-      }
+      siteCount = orgWebsites?.length || 0
+    } else {
+      // Individual user - use traditional subscription logic
+      const { data: websites } = await supabase
+        .from('websites')
+        .select('id')
+        .eq('owner_id', user.id)
+        .is('organization_id', null)
+
+      siteCount = websites?.length || 0
+      const websiteIds = websites?.map(w => w.id) || []
+
+      // Get user's subscription
+      const { data: subscriptions } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .in('website_id', websiteIds)
+
+      const activeSub = subscriptions?.find(sub => sub.status === 'active')
+      plan = activeSub?.plan || 'trial'
     }
 
-    // Get current usage
-    const queryCount = subscriptions?.reduce((sum, sub) => sum + (sub.usage_count || 0), 0) || 0
+    // Get current usage based on context
+    let queryCount = 0
+
+    if (userMembership?.organization_id) {
+      // For organizations, count queries across all org websites
+      const { data: orgWebsites } = await supabase
+        .from('websites')
+        .select('id')
+        .eq('organization_id', userMembership.organization_id)
+
+      if (orgWebsites && orgWebsites.length > 0) {
+        const websiteIds = orgWebsites.map(w => w.id)
+        const { data: subscriptions } = await supabase
+          .from('subscriptions')
+          .select('usage_count')
+          .in('website_id', websiteIds)
+
+        queryCount = subscriptions?.reduce((sum, sub) => sum + (sub.usage_count || 0), 0) || 0
+      }
+
+      // For enterprise plans, no trial expiration check needed
+    } else {
+      // Individual user logic
+      const { data: websites } = await supabase
+        .from('websites')
+        .select('id')
+        .eq('owner_id', user.id)
+        .is('organization_id', null)
+
+      const websiteIds = websites?.map(w => w.id) || []
+
+      if (websiteIds.length > 0) {
+        const { data: subscriptions } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .in('website_id', websiteIds)
+
+        const activeSub = subscriptions?.find(sub => sub.status === 'active')
+
+        // Check if trial is expired for individual users
+        if ((activeSub as any)?.plan_type === 'free' && (activeSub as any)?.trial_ends_at) {
+          const trialEnd = new Date((activeSub as any).trial_ends_at)
+          if (new Date() > trialEnd) {
+            plan = 'expired_trial'
+          }
+        }
+
+        queryCount = subscriptions?.reduce((sum, sub) => sum + (sub.usage_count || 0), 0) || 0
+      }
+    }
 
     const usage = { sites: siteCount, queries: queryCount }
     const limits = getPlanLimits(plan)
