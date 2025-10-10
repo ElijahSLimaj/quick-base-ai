@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { hasTicketingFeature } from '@/lib/billing/plans'
 import { emailService } from '@/lib/email/resend'
+import { autoAssignTicket } from '@/lib/assignment/assignment-engine'
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
@@ -126,6 +127,28 @@ export async function POST(request: NextRequest) {
       ticketNumber: ticket.ticket_number
     })
 
+    // Auto-assign ticket using load balancing + round-robin fallback
+    let assignmentResult = null
+    try {
+      console.log('Escalation API: Attempting auto-assignment...')
+      assignmentResult = await autoAssignTicket(website.organization_id, ticket.id)
+      
+      if (assignmentResult.assigneeId) {
+        console.log('Escalation API: Auto-assignment successful', {
+          assigneeId: assignmentResult.assigneeId,
+          method: assignmentResult.assignmentMethod,
+          openTickets: assignmentResult.openTicketsCount
+        })
+      } else {
+        console.log('Escalation API: Auto-assignment failed or disabled', {
+          error: assignmentResult.error
+        })
+      }
+    } catch (assignmentError) {
+      console.error('Escalation API: Auto-assignment error:', assignmentError)
+      // Don't fail the entire escalation if assignment fails
+    }
+
     // Create initial customer message if provided
     if (customerMessage) {
       await supabase
@@ -191,9 +214,19 @@ export async function POST(request: NextRequest) {
         title: ticket.title,
         status: ticket.status,
         priority: ticket.priority,
-        createdAt: ticket.created_at
+        createdAt: ticket.created_at,
+        assignedTo: assignmentResult?.assigneeId || null,
+        assignmentMethod: assignmentResult?.assignmentMethod || 'none'
       },
-      message: `Support ticket ${ticket.ticket_number} has been created. Our team will respond soon.`
+      assignment: assignmentResult ? {
+        assigned: !!assignmentResult.assigneeId,
+        method: assignmentResult.assignmentMethod,
+        openTicketsCount: assignmentResult.openTicketsCount,
+        error: assignmentResult.error
+      } : null,
+      message: assignmentResult?.assigneeId 
+        ? `Support ticket ${ticket.ticket_number} has been created and assigned to our team. You'll receive a response soon.`
+        : `Support ticket ${ticket.ticket_number} has been created. Our team will respond soon.`
     }, { status: 201 })
 
     // Add CORS headers
