@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { UserPlus, Mail, MoreHorizontal, Crown, Settings, Users, Trash2, Copy, Check, AlertCircle } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UserPlus, Mail, MoreHorizontal, Crown, Settings, Users, Trash2, Copy, Check, AlertCircle, Search, Download, UserCheck, Clock, Activity, Shield, User } from 'lucide-react'
 import { useNotification } from '@/contexts/NotificationContext'
 
 interface TeamMember {
@@ -65,6 +66,9 @@ export function TeamMemberManagement({
   const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member')
   const [inviteLoading, setInviteLoading] = useState(false)
   const [copiedLink, setCopiedLink] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [roleFilter, setRoleFilter] = useState<string>('all')
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const { showSuccess, showError } = useNotification()
 
   const canManageTeam = userRole === 'owner' || userRole === 'admin'
@@ -79,18 +83,18 @@ export function TeamMemberManagement({
   const fetchTeamData = async () => {
     try {
       const [membersRes, invitesRes] = await Promise.all([
-        fetch(`/api/organizations/${organization.id}/members`),
+        fetch(`/api/organizations/${organization.id}/team`),
         fetch(`/api/organizations/${organization.id}/invites`)
       ])
 
       if (membersRes.ok) {
         const membersData = await membersRes.json()
-        setMembers(membersData.members || [])
+        setMembers(membersData.teamMembers || [])
       }
 
       if (invitesRes.ok) {
         const invitesData = await invitesRes.json()
-        setInvitations(invitesData.invitations || [])
+        setInvitations(invitesData.invites || [])
       }
     } catch (error) {
       console.error('Error fetching team data:', error)
@@ -171,7 +175,7 @@ export function TeamMemberManagement({
     }
 
     try {
-      const response = await fetch(`/api/organizations/${organization.id}/members/${memberId}`, {
+      const response = await fetch(`/api/organizations/${organization.id}/team/${memberId}`, {
         method: 'DELETE'
       })
 
@@ -218,25 +222,84 @@ export function TeamMemberManagement({
       case 'owner':
         return <Crown className="w-4 h-4" />
       case 'admin':
-        return <Settings className="w-4 h-4" />
+        return <Shield className="w-4 h-4" />
       default:
-        return <Users className="w-4 h-4" />
+        return <User className="w-4 h-4" />
     }
   }
 
   const getRoleBadge = (role: string) => {
     const colors = {
-      owner: 'bg-purple-100 text-purple-800 border-purple-200',
-      admin: 'bg-blue-100 text-blue-800 border-blue-200',
-      member: 'bg-gray-100 text-gray-800 border-gray-200'
+      owner: 'bg-purple-50 text-purple-700 border-purple-200',
+      admin: 'bg-blue-50 text-blue-700 border-blue-200',
+      member: 'bg-gray-50 text-gray-700 border-gray-200'
     }
 
     return (
-      <Badge variant="secondary" className={colors[role as keyof typeof colors]}>
+      <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${colors[role as keyof typeof colors]}`}>
         {getRoleIcon(role)}
         <span className="ml-1 capitalize">{role}</span>
-      </Badge>
+      </div>
     )
+  }
+
+  const getStatusBadge = (status: string) => {
+    const config = {
+      active: { color: 'bg-green-50 text-green-700 border-green-200', dot: 'bg-green-400' },
+      pending: { color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' },
+      inactive: { color: 'bg-gray-50 text-gray-700 border-gray-200', dot: 'bg-gray-400' }
+    }
+
+    const statusConfig = config[status as keyof typeof config] || config.active
+
+    return (
+      <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${statusConfig.color}`}>
+        <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusConfig.dot}`}></div>
+        <span className="capitalize">{status}</span>
+      </div>
+    )
+  }
+
+  // Filter functionality
+  const filteredMembers = members.filter(member => {
+    const matchesSearch = !searchTerm ||
+      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (member.users?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesRole = roleFilter === 'all' || member.role === roleFilter
+
+    return matchesSearch && matchesRole
+  })
+
+  const filteredInvitations = invitations.filter(invite => {
+    const matchesSearch = !searchTerm ||
+      invite.email.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesRole = roleFilter === 'all' || invite.role === roleFilter
+
+    return matchesSearch && matchesRole
+  })
+
+  const exportTeamData = () => {
+    const csvData = members.map(member => ({
+      email: member.email || member.users?.email || '',
+      role: member.role,
+      status: member.status,
+      joinedAt: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'Pending'
+    }))
+
+    const csvContent = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${organization.name}-team-members.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   if (!canManageTeam) {
@@ -256,9 +319,9 @@ export function TeamMemberManagement({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span className="text-sm text-gray-600">Loading team members...</span>
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading team members...</span>
           </div>
         </CardContent>
       </Card>
@@ -267,15 +330,29 @@ export function TeamMemberManagement({
 
   return (
     <div className="space-y-6">
-      {/* Team Overview */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      {/* Header with Stats */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
           <div>
-            <CardTitle className="text-xl">Team Members</CardTitle>
-            <CardDescription>
-              Manage your organization's team members and permissions
-            </CardDescription>
+            <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
+            <div className="flex items-center space-x-2 mt-1">
+              <span className="text-sm text-gray-500">{organization.name}</span>
+              <span className="text-gray-300">•</span>
+              <span className="text-sm font-medium text-gray-700">
+                {organization.seat_count}/{organization.max_seats} seats used
+              </span>
+            </div>
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportTeamData}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
           <Button
             onClick={() => setShowInviteDialog(true)}
             disabled={availableSeats <= 0}
@@ -283,131 +360,248 @@ export function TeamMemberManagement({
             <UserPlus className="w-4 h-4 mr-2" />
             Invite Member
           </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
-            <span>{organization.seat_count} / {organization.max_seats} seats used</span>
-            {availableSeats <= 0 && (
-              <Badge variant="destructive">No available seats</Badge>
-            )}
+        </div>
+      </div>
+
+      {/* Compact Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Members</p>
+              <p className="text-xl font-semibold text-gray-900 mt-1">{members.length}</p>
+            </div>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Users className="w-4 h-4 text-blue-600" />
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Active Members */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Members</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="w-[70px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell className="font-medium">{member.email}</TableCell>
-                  <TableCell>{getRoleBadge(member.role)}</TableCell>
-                  <TableCell>
-                    <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-                      Active
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {member.role !== 'owner' && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-white">
-                          <DropdownMenuItem
-                            onClick={() => handleRemoveMember(member.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Active</p>
+              <p className="text-xl font-semibold text-gray-900 mt-1">
+                {members.filter(m => m.status === 'active').length}
+              </p>
+            </div>
+            <div className="p-2 bg-green-50 rounded-lg">
+              <UserCheck className="w-4 h-4 text-green-600" />
+            </div>
+          </div>
+        </div>
 
-      {/* Pending Invitations */}
-      {invitations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Invitations</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending</p>
+              <p className="text-xl font-semibold text-gray-900 mt-1">{invitations.length}</p>
+            </div>
+            <div className="p-2 bg-amber-50 rounded-lg">
+              <Clock className="w-4 h-4 text-amber-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Seats</p>
+              <p className="text-xl font-semibold text-gray-900 mt-1">{availableSeats}</p>
+            </div>
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <Settings className="w-4 h-4 text-purple-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Table with Tabs */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <Tabs defaultValue="members">
+              <TabsList className="bg-gray-50">
+                <TabsTrigger value="members" className="text-sm">
+                  Active Members ({filteredMembers.length})
+                </TabsTrigger>
+                <TabsTrigger value="invitations" className="text-sm">
+                  Pending Invitations ({filteredInvitations.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="flex gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search members..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-gray-200"
+                />
+              </div>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-32 bg-white border-gray-200 hover:bg-gray-50">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-0 shadow-lg rounded-lg">
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <Tabs defaultValue="members">
+          <TabsContent value="members" className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Sent</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="w-[140px]">Actions</TableHead>
+                <TableRow className="border-gray-100">
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Member</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Role</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Joined</TableHead>
+                  <TableHead className="w-[70px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invitations.map((invitation) => (
-                  <TableRow key={invitation.id}>
-                    <TableCell className="font-medium">{invitation.email}</TableCell>
-                    <TableCell>{getRoleBadge(invitation.role)}</TableCell>
+                {filteredMembers.map((member) => (
+                  <TableRow key={member.id} className="hover:bg-gray-50 border-gray-100">
                     <TableCell>
-                      {new Date(invitation.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invitation.expires_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCopyInviteLink(invitation)}
-                        >
-                          {copiedLink === invitation.id ? (
-                            <Check className="w-4 h-4" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancelInvitation(invitation.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-600">
+                            {(member.email || member.users?.email || '').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {member.email || member.users?.email}
+                          </div>
+                        </div>
                       </div>
+                    </TableCell>
+                    <TableCell>{getRoleBadge(member.role)}</TableCell>
+                    <TableCell>{getStatusBadge(member.status)}</TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {member.role !== 'owner' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-white">
+                            <DropdownMenuItem>
+                              <Settings className="w-4 h-4 mr-2" />
+                              Edit Role
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
+                {filteredMembers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      <div className="text-gray-500">No team members found</div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
+          </TabsContent>
+
+          <TabsContent value="invitations" className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-100">
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Role</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sent</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">Expires</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInvitations.map((invitation) => {
+                  const isExpired = new Date(invitation.expires_at) < new Date()
+                  return (
+                    <TableRow key={invitation.id} className="hover:bg-gray-50 border-gray-100">
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-amber-600">
+                              {invitation.email.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="font-medium text-gray-900">{invitation.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getRoleBadge(invitation.role)}</TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {new Date(invitation.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        <span className={isExpired ? 'text-red-600' : ''}>
+                          {new Date(invitation.expires_at).toLocaleDateString()}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyInviteLink(invitation)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {copiedLink === invitation.id ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCancelInvitation(invitation.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {filteredInvitations.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      <div className="text-gray-500">No pending invitations</div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Invite Member Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
@@ -439,7 +633,7 @@ export function TeamMemberManagement({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="member">Member - Can view and respond to tickets</SelectItem>
-                  <SelectItem value="admin">Admin - Can manage team and billing</SelectItem>
+                  <SelectItem value="admin">Admin - Can manage team and settings</SelectItem>
                 </SelectContent>
               </Select>
             </div>

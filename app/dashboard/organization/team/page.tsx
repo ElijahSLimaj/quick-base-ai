@@ -1,69 +1,173 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Users, Construction, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { Users, AlertCircle, Loader2 } from 'lucide-react'
+import { TeamMemberManagement } from '@/components/organizations/TeamMemberManagement'
+import { Card, CardContent } from '@/components/ui/card'
+import { createClient } from '@/lib/supabase/client'
+import { useNotification } from '@/contexts/NotificationContext'
+
+interface Organization {
+  id: string
+  name: string
+  slug: string
+  seat_count: number
+  max_seats: number
+  plan_name: string
+}
+
+interface UserMembership {
+  role: 'owner' | 'admin' | 'member'
+  permissions: {
+    manage_team?: boolean
+    [key: string]: any
+  }
+}
 
 export default function TeamPage() {
+  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'member' | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { showError } = useNotification()
+
+  useEffect(() => {
+    fetchOrganizationData()
+  }, [])
+
+  const fetchOrganizationData = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setError('Please log in to view team management')
+        return
+      }
+
+      // Get user's current organization membership
+      const { data: membership, error: membershipError } = await supabase
+        .from('team_members')
+        .select(`
+          role,
+          permissions,
+          organization_id,
+          organizations:organization_id(
+            id,
+            name,
+            slug,
+            seat_count,
+            max_seats,
+            plan_name
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single()
+
+      if (membershipError) {
+        console.error('Error fetching organization:', membershipError)
+        setError('No organization found. Please contact your administrator.')
+        return
+      }
+
+      if (!membership || !membership.organizations) {
+        setError('You are not a member of any organization')
+        return
+      }
+
+      const org = membership.organizations as any
+      setOrganization({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        seat_count: org.seat_count || 0,
+        max_seats: org.max_seats || 1,
+        plan_name: org.plan_name || 'enterprise'
+      })
+      setUserRole(membership.role as 'owner' | 'admin' | 'member')
+
+    } catch (error) {
+      console.error('Error fetching organization data:', error)
+      setError('Failed to load organization data')
+      showError('Failed to load team data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSeatsUpdated = () => {
+    // Refresh organization data when seats are updated
+    fetchOrganizationData()
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <Users className="h-8 w-8 mr-3 text-blue-600" />
+            Team Management
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Invite and manage your team members
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="p-8">
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="text-lg text-gray-600">Loading team data...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error || !organization || !userRole) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <Users className="h-8 w-8 mr-3 text-blue-600" />
+            Team Management
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Invite and manage your team members
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="p-8">
+            <div className="flex items-center space-x-3 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+              <span className="text-lg">{error || 'Unable to load team data'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <Users className="h-8 w-8 mr-3 text-green-600" />
+          <Users className="h-8 w-8 mr-3 text-blue-600" />
           Team Management
         </h1>
         <p className="text-gray-600 mt-2">
-          Invite and manage your team members
+          Invite and manage your team members for {organization.name}
         </p>
       </div>
 
-      <Card className="border-0 bg-gradient-to-br from-green-50 to-teal-50 shadow-lg">
-        <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-            <Construction className="h-8 w-8 text-green-600" />
-          </div>
-          <CardTitle className="text-2xl">Coming Soon</CardTitle>
-          <CardDescription className="text-base mt-2">
-            Complete team collaboration and management tools
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-white rounded-lg p-6 space-y-3">
-            <h3 className="font-semibold text-gray-900">What to Expect:</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start">
-                <ArrowRight className="h-4 w-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                <span>Invite team members via email with role-based access</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight className="h-4 w-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                <span>Manage support agent seats and permissions</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight className="h-4 w-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                <span>Track team member activity and performance</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight className="h-4 w-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                <span>Set up ticket routing and assignment rules</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight className="h-4 w-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                <span>Configure on-call schedules and availability</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="flex justify-center pt-4">
-            <Link href="/dashboard">
-              <Button variant="outline">
-                Back to Dashboard
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+      <TeamMemberManagement
+        organization={organization}
+        userRole={userRole}
+        onSeatsUpdated={handleSeatsUpdated}
+      />
     </div>
   )
 }
